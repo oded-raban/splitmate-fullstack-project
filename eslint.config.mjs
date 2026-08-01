@@ -90,6 +90,16 @@ const eslintConfig = defineConfig([
     },
   },
 
+  /* --- Developer scripts are command-line tools, not application code ----- */
+  {
+    files: ["scripts/**/*.mjs"],
+    rules: {
+      // These run in a terminal and their entire output *is* stdout, so the
+      // rule that stops stray logging reaching production logs does not apply.
+      "no-console": "off",
+    },
+  },
+
   /* --- Boundary 2: the service-role key never reaches the client ---------- */
   {
     files: ["components/**/*.{ts,tsx}", "app/**/*.tsx"],

@@ -24,7 +24,8 @@
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "db:diff": "supabase db diff",
-    "db:types": "supabase gen types typescript --local > lib/supabase/database.types.ts",
+    "db:types": "node scripts/gen-types.mjs",
+    "db:check": "node scripts/check-db.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {
