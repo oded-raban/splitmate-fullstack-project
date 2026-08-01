@@ -1,12 +1,12 @@
 # SplitMate — Product Requirements Document (PRD)
 
-| Field | Value |
-| --- | --- |
-| Product | **SplitMate** — collaborative expense management for shared households |
-| Document | Product Specification (Deliverable #3) |
-| Version | 1.0 |
-| Author | Oded (RUNI CS 2026, Internet Technologies Final Project) |
-| Status | Approved for implementation |
+| Field        | Value                                                                           |
+| ------------ | ------------------------------------------------------------------------------- |
+| Product      | **SplitMate** — collaborative expense management for shared households          |
+| Document     | Product Specification (Deliverable #3)                                          |
+| Version      | 1.0                                                                             |
+| Author       | Oded (RUNI CS 2026, Internet Technologies Final Project)                        |
+| Status       | Approved for implementation                                                     |
 | Related docs | [Architecture](./02-architecture.md) · [Technical Spec](./03-technical-spec.md) |
 
 ---
@@ -27,7 +27,7 @@ Around that spine sits everything that makes the habit stick: a real-time shared
 
 ### 2.1 What actually goes wrong
 
-Shared households do not fail at *arithmetic*. They fail at **record-keeping, fairness, and social friction**. Three distinct failure modes:
+Shared households do not fail at _arithmetic_. They fail at **record-keeping, fairness, and social friction**. Three distinct failure modes:
 
 **Failure mode 1 — The ledger lives in someone's head.**
 The default tools are a WhatsApp group and memory. Expenses are announced ("I bought toilet paper, 40 shekels") and then lost in the scroll. Within two weeks nobody can reconstruct the month. The person with the best memory — or the loudest voice — ends up with the most favourable settlement.
@@ -40,9 +40,9 @@ This is the real killer. Even when the numbers are known, chasing ₪180 from a 
 
 ### 2.2 Why existing solutions leave a gap
 
-Manual approaches (a shared spreadsheet, a Notes file, WhatsApp) are free and flexible but have no integrity guarantees, no notion of identity, no automatic balance calculation, and no way to prove what was agreed. General-purpose expense splitters solve the arithmetic but treat the household as a one-off event rather than an ongoing shared operation — they have no concept of the *shopping list that becomes the grocery expense*, no recurring rent automation, and no per-household analytics. Banking apps see the transaction but not the split.
+Manual approaches (a shared spreadsheet, a Notes file, WhatsApp) are free and flexible but have no integrity guarantees, no notion of identity, no automatic balance calculation, and no way to prove what was agreed. General-purpose expense splitters solve the arithmetic but treat the household as a one-off event rather than an ongoing shared operation — they have no concept of the _shopping list that becomes the grocery expense_, no recurring rent automation, and no per-household analytics. Banking apps see the transaction but not the split.
 
-**SplitMate's wedge:** treat the household as a persistent, multi-user, permissioned workspace with an append-only financial ledger — and then wrap the ledger in the day-to-day workflows (shopping, receipts, reminders) that make people open the app when they *aren't* thinking about money.
+**SplitMate's wedge:** treat the household as a persistent, multi-user, permissioned workspace with an append-only financial ledger — and then wrap the ledger in the day-to-day workflows (shopping, receipts, reminders) that make people open the app when they _aren't_ thinking about money.
 
 ### 2.3 Problem statement
 
@@ -59,16 +59,16 @@ Adults aged 20–35 sharing a residence with two to six people, in an urban rent
 ### 3.2 Personas
 
 **Maya, 23 — the Organiser.** Third-year student, shares a four-bedroom flat near campus. She is the one who currently maintains the spreadsheet and sends the monthly "please transfer me" message. She is the buyer and the champion: she will create the household and invite everyone.
-*Her job-to-be-done:* stop being the household's unpaid accountant, and stop feeling like a nag.
-*Success for her:* the app sends the reminders so she doesn't have to.
+_Her job-to-be-done:_ stop being the household's unpaid accountant, and stop feeling like a nag.
+_Success for her:_ the app sends the reminders so she doesn't have to.
 
 **Yonatan, 26 — the Casual Participant.** Works full time, contributes but doesn't want to manage anything. He will log an expense only if it takes under fifteen seconds, and he will never open a settings page.
-*His job-to-be-done:* prove he already paid his share without keeping receipts.
-*Success for him:* opens the app, sees "you owe Maya ₪124", taps settle, done.
+_His job-to-be-done:_ prove he already paid his share without keeping receipts.
+_Success for him:_ opens the app, sees "you owe Maya ₪124", taps settle, done.
 
 **Noa, 22 — the Fairness Sceptic.** Lives in the small room, travels often, and is quietly convinced she overpays. She is the reason flexible splits and full history exist.
-*Her job-to-be-done:* verify that the split reflects reality, and challenge it when it doesn't.
-*Success for her:* she can open any expense, see exactly how it was divided, see who edited it and when, and see a receipt photo.
+_Her job-to-be-done:_ verify that the split reflects reality, and challenge it when it doesn't.
+_Success for her:_ she can open any expense, see exactly how it was divided, see who edited it and when, and see a receipt photo.
 
 **Tal, 30 — the Couple-in-a-Shared-Flat.** Shares the flat with two others but splits their own portion proportionally to income with a partner. Represents the weighted-share use case.
 
@@ -97,28 +97,28 @@ The rubric distinguishes these deliberately, and for SplitMate they are worth se
 
 ### 4.2 Metrics
 
-| Metric | Definition | Target |
-| --- | --- | --- |
-| **Activation rate** | % of new households reaching: ≥2 members joined **and** ≥3 expenses logged within 7 days | 40% |
-| **Invite acceptance** | % of sent invitations accepted within 72h | 60% |
-| **Weekly active households** | Households with ≥1 expense, settlement, or shopping-item event in a 7-day window | Primary retention metric |
-| **Settlement completion** | % of suggested settlements marked paid within 14 days | 50% |
-| **Time-to-log** | Median seconds from "New expense" to saved | < 20s |
-| **Ledger integrity** | Expenses whose splits do not sum to the total | **0, enforced by the database** |
+| Metric                       | Definition                                                                               | Target                          |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------- |
+| **Activation rate**          | % of new households reaching: ≥2 members joined **and** ≥3 expenses logged within 7 days | 40%                             |
+| **Invite acceptance**        | % of sent invitations accepted within 72h                                                | 60%                             |
+| **Weekly active households** | Households with ≥1 expense, settlement, or shopping-item event in a 7-day window         | Primary retention metric        |
+| **Settlement completion**    | % of suggested settlements marked paid within 14 days                                    | 50%                             |
+| **Time-to-log**              | Median seconds from "New expense" to saved                                               | < 20s                           |
+| **Ledger integrity**         | Expenses whose splits do not sum to the total                                            | **0, enforced by the database** |
 
 The last row is not a vanity metric. It is a hard invariant enforced by a database constraint, and it is the metric that protects goal #4.
 
 ### 4.3 Monetisation (designed, not implemented)
 
-| | **Free** | **Pro** (~₪15/household/month) |
-| --- | --- | --- |
-| Members | Up to 6 | Unlimited |
-| Expenses & settlements | Unlimited | Unlimited |
-| Analytics history | Last 3 months | Unlimited |
-| Receipt storage | 50 receipts | Unlimited |
-| Recurring expense automation | 1 rule | Unlimited |
-| CSV export | — | Yes |
-| Email reminders | — | Yes |
+|                              | **Free**      | **Pro** (~₪15/household/month) |
+| ---------------------------- | ------------- | ------------------------------ |
+| Members                      | Up to 6       | Unlimited                      |
+| Expenses & settlements       | Unlimited     | Unlimited                      |
+| Analytics history            | Last 3 months | Unlimited                      |
+| Receipt storage              | 50 receipts   | Unlimited                      |
+| Recurring expense automation | 1 rule        | Unlimited                      |
+| CSV export                   | —             | Yes                            |
+| Email reminders              | —             | Yes                            |
 
 Billing integration is an explicit non-goal for this version (see §8.3). The tier structure is documented because it justifies which features exist, and because "how would this make money" is a graded question. The quota fields (`plan`, limits) are present in the schema so the boundary is real, even though no payment provider is wired up.
 
@@ -140,23 +140,23 @@ These are the tie-breakers used whenever a design decision is ambiguous.
 
 This section maps business goals to the software capabilities that must exist — the rubric's "what software capabilities need to be built."
 
-| # | Capability | Serves goal | Notes |
-| --- | --- | --- | --- |
-| C1 | Identity & authentication | All | Passwordless magic link + Google OAuth; no password storage |
-| C2 | Multi-tenant household workspaces | 1, 4 | A user may belong to several households simultaneously |
-| C3 | Role-based permissions | 4 | Owner / Admin / Member with distinct rights |
-| C4 | Invitation & onboarding system | 3 | Email invite and shareable link, expiring and revocable |
-| C5 | Expense ledger with flexible splitting | 1 | Four split strategies over an append-only ledger |
-| C6 | Revision history & audit log | 4 | Every mutation attributed and reversible in reading |
-| C7 | Balance derivation engine | 1 | Net position per member, computed not stored |
-| C8 | Debt simplification engine | 1 | Minimal transfer set to clear all debts |
-| C9 | Settlement recording | 1 | Records that a real-world payment occurred |
-| C10 | Real-time collaborative shopping list | 1, 3 | Multi-user live editing; converts to an expense |
-| C11 | Receipt capture & secure storage | 2, 4 | Private bucket, signed URLs, per-household quota |
-| C12 | Recurring expense automation & reminders | 2 | Scheduled generation of predictable bills |
-| C13 | Analytics & reporting | 2 | Category/member/time breakdowns; CSV export |
-| C14 | Notification system | 1, 3 | In-app centre, optional email |
-| C15 | Data isolation & security enforcement | 4 | Row-Level Security on every table |
+| #   | Capability                               | Serves goal | Notes                                                       |
+| --- | ---------------------------------------- | ----------- | ----------------------------------------------------------- |
+| C1  | Identity & authentication                | All         | Passwordless magic link + Google OAuth; no password storage |
+| C2  | Multi-tenant household workspaces        | 1, 4        | A user may belong to several households simultaneously      |
+| C3  | Role-based permissions                   | 4           | Owner / Admin / Member with distinct rights                 |
+| C4  | Invitation & onboarding system           | 3           | Email invite and shareable link, expiring and revocable     |
+| C5  | Expense ledger with flexible splitting   | 1           | Four split strategies over an append-only ledger            |
+| C6  | Revision history & audit log             | 4           | Every mutation attributed and reversible in reading         |
+| C7  | Balance derivation engine                | 1           | Net position per member, computed not stored                |
+| C8  | Debt simplification engine               | 1           | Minimal transfer set to clear all debts                     |
+| C9  | Settlement recording                     | 1           | Records that a real-world payment occurred                  |
+| C10 | Real-time collaborative shopping list    | 1, 3        | Multi-user live editing; converts to an expense             |
+| C11 | Receipt capture & secure storage         | 2, 4        | Private bucket, signed URLs, per-household quota            |
+| C12 | Recurring expense automation & reminders | 2           | Scheduled generation of predictable bills                   |
+| C13 | Analytics & reporting                    | 2           | Category/member/time breakdowns; CSV export                 |
+| C14 | Notification system                      | 1, 3        | In-app centre, optional email                               |
+| C15 | Data isolation & security enforcement    | 4           | Row-Level Security on every table                           |
 
 ---
 
@@ -166,13 +166,13 @@ The rubric asks explicitly what key processes the product enables. Each process 
 
 ### P1 — Registration & Authentication
 
-1. Visitor lands on the marketing page and chooses *Get started*.
+1. Visitor lands on the marketing page and chooses _Get started_.
 2. They enter an email address and receive a one-time magic link, **or** continue with Google.
 3. Following the link establishes a session; a profile row is created automatically on first sign-in.
 4. First-time users are asked for a display name (how roommates will identify them), then routed to onboarding.
 5. Returning users land on their dashboard. Sessions persist across refresh and are refreshed transparently.
 
-*Edge cases:* expired or already-used magic link; link opened in a different browser than requested; a user who signs in with Google using an email that already has a magic-link identity (same identity, linked by email); a user who arrives via an invite link while signed out (the invitation is preserved through the auth round-trip and applied on return).
+_Edge cases:_ expired or already-used magic link; link opened in a different browser than requested; a user who signs in with Google using an email that already has a magic-link identity (same identity, linked by email); a user who arrives via an invite link while signed out (the invitation is preserved through the auth round-trip and applied on return).
 
 ### P2 — Household Creation
 
@@ -184,18 +184,18 @@ The rubric asks explicitly what key processes the product enables. Each process 
 
 ### P3 — Inviting & Joining
 
-1. An Owner or Admin opens *Members → Invite*.
+1. An Owner or Admin opens _Members → Invite_.
 2. They either send an email invitation or copy a shareable link. Both carry a single opaque token.
 3. The token is stored **hashed** with an expiry (7 days) and an intended role.
 4. The invitee opens the link. If signed out, they authenticate first and are returned to the same invitation.
 5. They see a preview — household name, who invited them, current members — and accept or decline.
 6. On acceptance a membership row is created, the invitation is marked accepted, the household is notified, and an activity entry is written.
 
-*Edge cases:* expired token; revoked token; already-accepted token; a user who is already a member (idempotent no-op with a friendly message); an invitation addressed to email A opened by a user signed in as email B (allowed for link invites, blocked for email-targeted invites); a household at its member cap.
+_Edge cases:_ expired token; revoked token; already-accepted token; a user who is already a member (idempotent no-op with a friendly message); an invitation addressed to email A opened by a user signed in as email B (allowed for link invites, blocked for email-targeted invites); a household at its member cap.
 
 ### P4 — Logging an Expense
 
-1. From the household home, the user taps *Add expense*.
+1. From the household home, the user taps _Add expense_.
 2. They enter: description, amount, who paid (defaults to themselves), date (defaults to today), category, and optionally a note and a receipt photo.
 3. They choose participants (defaults to all current members) and a split method:
    - **Equally** — the total divided among participants, with any indivisible remainder distributed deterministically so the sum is exact.
@@ -205,7 +205,7 @@ The rubric asks explicitly what key processes the product enables. Each process 
 4. A live preview shows each participant's resulting share before saving.
 5. On save, the expense, its splits, and an activity entry are written **in a single transaction**. Balances update immediately.
 
-*Edge cases:* zero or negative amounts (rejected); amount above a sane ceiling (rejected); no participants selected (rejected); payer not in the participant set (allowed — they fronted money for others); a participant who has since left the household (blocked at the database level); duplicate rapid submissions (guarded by an idempotency key); a receipt upload that fails after the expense is saved (the expense persists; the receipt can be retried).
+_Edge cases:_ zero or negative amounts (rejected); amount above a sane ceiling (rejected); no participants selected (rejected); payer not in the participant set (allowed — they fronted money for others); a participant who has since left the household (blocked at the database level); duplicate rapid submissions (guarded by an idempotency key); a receipt upload that fails after the expense is saved (the expense persists; the receipt can be retried).
 
 ### P5 — Editing, Deleting & History
 
@@ -214,24 +214,24 @@ The rubric asks explicitly what key processes the product enables. Each process 
 3. Any member can open an expense's history and see every change.
 4. Deleting is a **soft delete**: the expense leaves balances and lists but remains in the audit trail and is restorable by an Admin.
 
-*Edge cases:* two members editing concurrently (last-write-wins with an optimistic-concurrency check on `updated_at`, surfacing a "this changed while you were editing" conflict rather than silently clobbering); editing an expense that a settlement was based on (permitted — balances simply recompute, since balances are derived).
+_Edge cases:_ two members editing concurrently (last-write-wins with an optimistic-concurrency check on `updated_at`, surfacing a "this changed while you were editing" conflict rather than silently clobbering); editing an expense that a settlement was based on (permitted — balances simply recompute, since balances are derived).
 
 ### P6 — Viewing Balances
 
-1. The household home shows a compact summary: *You are owed ₪X* or *You owe ₪Y*, plus a per-member breakdown.
+1. The household home shows a compact summary: _You are owed ₪X_ or _You owe ₪Y_, plus a per-member breakdown.
 2. Each member's net position is derived as: `paid − owed + settlements_sent − settlements_received`.
 3. A cross-household dashboard aggregates positions for users in multiple households.
 4. Balances always sum to zero across the household — a useful self-check that is asserted in tests.
 
 ### P7 — Settling Up
 
-1. The user opens *Settle up*.
+1. The user opens _Settle up_.
 2. SplitMate presents the **simplified transfer set**: the minimum list of payments that clears every debt in the household. With four members and tangled debts this typically reduces five or six transfers to two.
 3. The user picks a suggested transfer (or records a custom one), confirms the amount — partial payments are allowed — chooses a method label (Bit / bank transfer / cash / other), and confirms.
 4. A settlement record is written; balances recompute; both parties are notified.
 5. The receiving party can dispute a settlement, which voids it (leaving the void in the audit trail).
 
-*Edge cases:* settling more than is owed (allowed but warned — it flips the balance direction); settling with yourself (rejected); settling with a non-member (rejected); a settlement recorded while a concurrent expense changes the balance (both are ledger facts, so the result is simply the new sum — no lost update is possible).
+_Edge cases:_ settling more than is owed (allowed but warned — it flips the balance direction); settling with yourself (rejected); settling with a non-member (rejected); a settlement recorded while a concurrent expense changes the balance (both are ledger facts, so the result is simply the new sum — no lost update is possible).
 
 ### P8 — Shared Shopping List (real-time)
 
@@ -241,7 +241,7 @@ The rubric asks explicitly what key processes the product enables. Each process 
 4. Tapping **Checkout** opens the expense form pre-filled with the checked items' estimated total, the "Groceries" category, and a description summarising the items. The user corrects the real total and saves.
 5. The purchased items are archived and linked to the created expense, so any expense can be traced back to what was actually bought.
 
-*Edge cases:* two members checking off the same item simultaneously (idempotent — first write wins, both UIs converge); an item added and deleted in rapid succession while another client is mid-render (reconciled by the realtime event stream); working offline (optimistic updates are rolled back with a toast if the write fails); checkout with no checked items (blocked).
+_Edge cases:_ two members checking off the same item simultaneously (idempotent — first write wins, both UIs converge); an item added and deleted in rapid succession while another client is mid-render (reconciled by the realtime event stream); working offline (optimistic updates are rolled back with a toast if the write fails); checkout with no checked items (blocked).
 
 ### P9 — Receipts
 
@@ -251,7 +251,7 @@ The rubric asks explicitly what key processes the product enables. Each process 
 4. Viewing generates a short-lived signed URL; the file is never publicly addressable.
 5. Deleting an expense retains the receipt for the audit trail until the expense is permanently purged.
 
-*Edge cases:* non-image or oversized file (rejected client- and server-side); upload interrupted (expense still saves); a member of another household guessing the storage path (blocked by storage policies, not obscurity).
+_Edge cases:_ non-image or oversized file (rejected client- and server-side); upload interrupted (expense still saves); a member of another household guessing the storage path (blocked by storage policies, not obscurity).
 
 ### P10 — Recurring Expenses & Reminders
 
@@ -260,7 +260,7 @@ The rubric asks explicitly what key processes the product enables. Each process 
 3. Members are notified that the expense was created, with a link to review or adjust it.
 4. Rules can be paused, edited, or deleted; editing a rule never rewrites expenses it already generated.
 
-*Edge cases:* "the 31st" in a 30-day month (clamped to the last day); a rule whose split references a member who has left (the job skips the rule and notifies an Admin rather than writing an invalid expense); the job running twice in one day (idempotent — a uniqueness guard on rule + period prevents duplicates); time-zone boundaries (all scheduling evaluated in the household's timezone).
+_Edge cases:_ "the 31st" in a 30-day month (clamped to the last day); a rule whose split references a member who has left (the job skips the rule and notifies an Admin rather than writing an invalid expense); the job running twice in one day (idempotent — a uniqueness guard on rule + period prevents duplicates); time-zone boundaries (all scheduling evaluated in the household's timezone).
 
 ### P11 — Analytics & Reporting
 
@@ -279,20 +279,20 @@ In-app notification centre with unread badge, covering: you were added to a hous
 
 ### 8.1 Roles & permissions
 
-| Action | Owner | Admin | Member |
-| --- | :---: | :---: | :---: |
-| View household data (expenses, balances, activity) | ✅ | ✅ | ✅ |
-| Create expenses & shopping items | ✅ | ✅ | ✅ |
-| Edit / delete **own** expense (as payer or creator) | ✅ | ✅ | ✅ |
-| Edit / delete **any** expense | ✅ | ✅ | ❌ |
-| Record a settlement **they are party to** | ✅ | ✅ | ✅ |
-| Invite members | ✅ | ✅ | ❌ |
-| Change member roles | ✅ | ❌ | ❌ |
-| Remove a member | ✅ | ✅ | ❌ |
-| Manage recurring rules & categories | ✅ | ✅ | ❌ |
-| Rename household / change settings | ✅ | ✅ | ❌ |
-| Archive or delete the household | ✅ | ❌ | ❌ |
-| Leave the household | ✅* | ✅ | ✅ |
+| Action                                              | Owner | Admin | Member |
+| --------------------------------------------------- | :---: | :---: | :----: |
+| View household data (expenses, balances, activity)  |  ✅   |  ✅   |   ✅   |
+| Create expenses & shopping items                    |  ✅   |  ✅   |   ✅   |
+| Edit / delete **own** expense (as payer or creator) |  ✅   |  ✅   |   ✅   |
+| Edit / delete **any** expense                       |  ✅   |  ✅   |   ❌   |
+| Record a settlement **they are party to**           |  ✅   |  ✅   |   ✅   |
+| Invite members                                      |  ✅   |  ✅   |   ❌   |
+| Change member roles                                 |  ✅   |  ❌   |   ❌   |
+| Remove a member                                     |  ✅   |  ✅   |   ❌   |
+| Manage recurring rules & categories                 |  ✅   |  ✅   |   ❌   |
+| Rename household / change settings                  |  ✅   |  ✅   |   ❌   |
+| Archive or delete the household                     |  ✅   |  ❌   |   ❌   |
+| Leave the household                                 |  ✅*  |  ✅   |   ✅   |
 
 \* An Owner must transfer ownership before leaving. Any member with a non-zero balance must settle (or be force-settled by an Owner, which writes an explicit written-off settlement) before removal — otherwise the ledger would lose a counterparty.
 
@@ -304,14 +304,14 @@ Everything in §6 (C1–C15) and §7 (P1–P12).
 
 Each of these was considered and deliberately excluded; the reasoning matters more than the exclusion.
 
-| Non-goal | Why excluded |
-| --- | --- |
-| **Real money movement** (Stripe, Bit, open banking) | Regulatory and PCI burden far beyond course scope. SplitMate records that a payment happened; the payment itself occurs in the app the household already uses. Deep-linking to a P2P app is a plausible v2. |
-| **Subscription billing** | The tier model is designed and the schema supports it, but wiring a payment provider adds a webhook surface and failure modes without demonstrating new engineering skill. |
-| **Multi-currency with FX** | One currency per household, chosen at creation. Real multi-currency requires historical exchange rates, a rate provider, and a decision about *when* a debt is converted — genuinely hard and easy to get subtly wrong. Documented as a v2 with a proposed approach. |
-| **OCR receipt scanning** | Attractive in a demo, but reliable extraction is an ML problem; a flaky version is worse than none. Receipts are stored and viewable, not parsed. |
-| **Native mobile apps** | A responsive, installable PWA-grade web app covers the use case. |
-| **Chat / messaging** | Households already have WhatsApp. Competing with it is a losing scope expansion. |
+| Non-goal                                            | Why excluded                                                                                                                                                                                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Real money movement** (Stripe, Bit, open banking) | Regulatory and PCI burden far beyond course scope. SplitMate records that a payment happened; the payment itself occurs in the app the household already uses. Deep-linking to a P2P app is a plausible v2.                                                          |
+| **Subscription billing**                            | The tier model is designed and the schema supports it, but wiring a payment provider adds a webhook surface and failure modes without demonstrating new engineering skill.                                                                                           |
+| **Multi-currency with FX**                          | One currency per household, chosen at creation. Real multi-currency requires historical exchange rates, a rate provider, and a decision about _when_ a debt is converted — genuinely hard and easy to get subtly wrong. Documented as a v2 with a proposed approach. |
+| **OCR receipt scanning**                            | Attractive in a demo, but reliable extraction is an ML problem; a flaky version is worse than none. Receipts are stored and viewable, not parsed.                                                                                                                    |
+| **Native mobile apps**                              | A responsive, installable PWA-grade web app covers the use case.                                                                                                                                                                                                     |
+| **Chat / messaging**                                | Households already have WhatsApp. Competing with it is a losing scope expansion.                                                                                                                                                                                     |
 
 ### 8.4 Assumptions
 
@@ -321,31 +321,31 @@ Members have their own email address and a device with a camera and browser; hou
 
 ## 9. Release Plan
 
-| Milestone | Contents | Definition of done |
-| --- | --- | --- |
-| **M1 — Specification** | PRD, architecture, technical spec | Documents reviewed and approved |
-| **M2 — Data foundation** | Schema, constraints, RLS, SQL functions, seeds | Database rejects unbalanced expenses and cross-household reads |
-| **M3 — Identity & groups** | P1, P2, P3 | Two real users share one household in production |
-| **M4 — Ledger** | P4, P5, P6 | Balances correct across all four split methods |
-| **M5 — Settlement** | P7, P12 (partial) | Debts clear with a minimal transfer set — **end-to-end MVP** |
-| **M6 — Live deployment** | Vercel + hosted Supabase | Public URL usable by a stranger |
-| **M7 — Collaboration** | P8, P9 | Two browsers see the same list update live |
-| **M8 — Automation & insight** | P10, P11, P12 | A recurring bill generates unattended |
-| **M9 — Quality** | Test plan + implementation | Core workflows and data isolation covered by tests |
-| **M10 — Hardening** | Security & scalability documents and fixes | Documented, measured, and mitigated |
-| **M11 — Delivery** | README, wiki, slide deck, Q&A prep | Presentable end to end |
+| Milestone                     | Contents                                       | Definition of done                                             |
+| ----------------------------- | ---------------------------------------------- | -------------------------------------------------------------- |
+| **M1 — Specification**        | PRD, architecture, technical spec              | Documents reviewed and approved                                |
+| **M2 — Data foundation**      | Schema, constraints, RLS, SQL functions, seeds | Database rejects unbalanced expenses and cross-household reads |
+| **M3 — Identity & groups**    | P1, P2, P3                                     | Two real users share one household in production               |
+| **M4 — Ledger**               | P4, P5, P6                                     | Balances correct across all four split methods                 |
+| **M5 — Settlement**           | P7, P12 (partial)                              | Debts clear with a minimal transfer set — **end-to-end MVP**   |
+| **M6 — Live deployment**      | Vercel + hosted Supabase                       | Public URL usable by a stranger                                |
+| **M7 — Collaboration**        | P8, P9                                         | Two browsers see the same list update live                     |
+| **M8 — Automation & insight** | P10, P11, P12                                  | A recurring bill generates unattended                          |
+| **M9 — Quality**              | Test plan + implementation                     | Core workflows and data isolation covered by tests             |
+| **M10 — Hardening**           | Security & scalability documents and fixes     | Documented, measured, and mitigated                            |
+| **M11 — Delivery**            | README, wiki, slide deck, Q&A prep             | Presentable end to end                                         |
 
 ---
 
 ## 10. Risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Scope creep across 12 workflows | Late, unstable product | MVP is complete at M5; everything after is additive and independently droppable |
-| Split rounding bugs producing wrong money | Destroys product trust | Pure, exhaustively unit-tested domain layer plus a database constraint as a backstop |
-| RLS misconfiguration leaking data across households | Critical security failure | Integration tests that query as two distinct real users and assert empty results |
-| Realtime complexity (races, duplicate events) | Confusing UX | Idempotent operations, server-authoritative reconciliation, optimistic updates that roll back visibly |
-| Deployment discovered broken at the deadline | Catastrophic | Deploy at M6, mid-project, and keep every subsequent change deployed continuously |
+| Risk                                                | Impact                    | Mitigation                                                                                            |
+| --------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Scope creep across 12 workflows                     | Late, unstable product    | MVP is complete at M5; everything after is additive and independently droppable                       |
+| Split rounding bugs producing wrong money           | Destroys product trust    | Pure, exhaustively unit-tested domain layer plus a database constraint as a backstop                  |
+| RLS misconfiguration leaking data across households | Critical security failure | Integration tests that query as two distinct real users and assert empty results                      |
+| Realtime complexity (races, duplicate events)       | Confusing UX              | Idempotent operations, server-authoritative reconciliation, optimistic updates that roll back visibly |
+| Deployment discovered broken at the deadline        | Catastrophic              | Deploy at M6, mid-project, and keep every subsequent change deployed continuously                     |
 
 ---
 

@@ -1,0 +1,86 @@
+# =============================================================================
+# Continuous Integration
+# =============================================================================
+# Runs on every push and pull request. The job order is deliberate: the fastest,
+# most likely-to-fail checks run first so a broken branch reports in under a
+# minute rather than after a full build.
+#
+#   quality → typecheck, lint, formatting, unit + component tests
+#   build   → a real production build, proving the app actually compiles
+#
+# End-to-end tests are NOT run here. They need a live database with seeded
+# users, so they run against the Vercel preview deployment (see docs/04-test-plan.md).
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs: if two commits are pushed quickly, only the newer one
+# needs to be verified. Saves CI minutes and gives faster feedback.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Types, lint & tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Caches ~/.npm keyed on package-lock.json, cutting install time
+          # substantially on repeat runs.
+          cache: npm
+
+      # `npm ci` installs exactly what the lockfile specifies and fails if
+      # package.json and the lockfile disagree — reproducible, unlike `npm i`.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      # Covers the domain layer (money, splits, balances, debt simplification)
+      # and React components. These are the tests that must never go red.
+      - name: Unit & component tests
+        run: npm test
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Placeholder values are sufficient here: this job proves the code
+      # *compiles*, and no network call to Supabase happens during a build.
+      # Real credentials live in Vercel's environment, never in CI.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-build-only
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key-build-only
+          CRON_SECRET: placeholder-cron-secret-value

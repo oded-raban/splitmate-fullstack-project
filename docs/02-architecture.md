@@ -1,9 +1,9 @@
 # SplitMate — Software Architecture Design
 
-| Field | Value |
-| --- | --- |
-| Document | Architecture Design (Deliverable #4, part 1) |
-| Version | 1.0 |
+| Field        | Value                                                                          |
+| ------------ | ------------------------------------------------------------------------------ |
+| Document     | Architecture Design (Deliverable #4, part 1)                                   |
+| Version      | 1.0                                                                            |
 | Related docs | [PRD](./01-product-requirements.md) · [Technical Spec](./03-technical-spec.md) |
 
 This document answers the architecture questions the assignment asks explicitly: what components compose the system, whether there is a database and what lives in it, what pages exist, what API routes and Server Actions are needed, how data flows between frontend, backend and database, what user types and permissions exist, and which external services we integrate and why.
@@ -20,8 +20,8 @@ This document answers the architecture questions the assignment asks explicitly:
                 │ HTTPS                             │ WSS (Realtime)
                 ▼                                   │
 ┌──────────────────────────────────────────────┐    │
-│               Vercel Edge                     │    │
-│  middleware.ts — refresh session cookies,     │    │
+│          Proxy layer (Vercel, Node)           │    │
+│  proxy.ts — refresh session cookies,          │    │
 │  guard /app/* routes, apply security headers  │    │
 └───────────────┬──────────────────────────────┘    │
                 ▼                                   │
@@ -47,7 +47,7 @@ This document answers the architecture questions the assignment asks explicitly:
 
 ### The single most important architectural decision
 
-**Authorization lives in the database, not in the application.** Every query the Next.js server issues on behalf of a user is executed with that user's JWT, so PostgreSQL Row-Level Security evaluates every row. The application layer *also* checks permissions — for good error messages and early rejection — but it is not the boundary.
+**Authorization lives in the database, not in the application.** Every query the Next.js server issues on behalf of a user is executed with that user's JWT, so PostgreSQL Row-Level Security evaluates every row. The application layer _also_ checks permissions — for good error messages and early rejection — but it is not the boundary.
 
 The consequence: a forgotten `where household_id = ?` in application code returns **zero rows** instead of leaking another household's finances. The service-role key, which bypasses RLS, exists only in the scheduled-job route handler and never reaches a user-facing request path.
 
@@ -61,11 +61,13 @@ Mostly server-rendered HTML with React Server Component payloads. Client compone
 
 The client holds one direct connection to Supabase that bypasses the Next.js server: the **Realtime WebSocket** for the shopping list. This is deliberate — proxying a WebSocket through serverless functions would be both expensive and fragile — and it is safe because Realtime authorizes subscriptions through the same RLS policies as ordinary queries.
 
-### 2.2 Edge middleware
+### 2.2 Proxy layer (`proxy.ts`)
 
 Runs before every matched request. It refreshes the Supabase session cookie (tokens are short-lived; without refresh, users are silently logged out mid-session), redirects unauthenticated requests for `/app/*` to login while preserving the intended destination, redirects authenticated users away from the login page, and attaches security headers including a Content Security Policy.
 
-Middleware performs **no data authorization**. It is a UX and hygiene layer; treating it as a security boundary is a common and serious mistake, since it can be bypassed by anything that reaches a Server Action directly.
+> **Version note.** Next.js 16 renamed the `middleware.ts` convention to `proxy.ts`, with the exported function named `proxy`. It now runs exclusively on the **Node.js runtime** — the edge runtime is not supported for this file. Everything written about "middleware" in older Next.js material applies here under the new name.
+
+This layer performs **no data authorization**. It is a UX and hygiene layer; treating it as a security boundary is a common and serious mistake, since a request that reaches a Server Action directly never passes through it. The Next.js documentation makes the same point explicitly: the proxy is for optimistic checks, not for session management or authorization.
 
 ### 2.3 Application server (Next.js)
 
@@ -81,13 +83,13 @@ Four distinct responsibilities, kept in separate directories:
 
 ### 2.4 Data platform (Supabase)
 
-| Service | Role |
-| --- | --- |
-| **Postgres** | System of record; also hosts business logic that belongs near the data (balance derivation, analytics aggregation, atomic multi-table writes) |
-| **Auth (GoTrue)** | Magic-link and Google OAuth; issues the JWTs that RLS reads |
-| **Storage** | Private bucket for receipt images, governed by storage RLS policies |
-| **Realtime** | Postgres change streams over WebSocket for the shopping list |
-| **pg_cron / Vercel Cron** | Daily trigger for recurring expense generation |
+| Service                   | Role                                                                                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Postgres**              | System of record; also hosts business logic that belongs near the data (balance derivation, analytics aggregation, atomic multi-table writes) |
+| **Auth (GoTrue)**         | Magic-link and Google OAuth; issues the JWTs that RLS reads                                                                                   |
+| **Storage**               | Private bucket for receipt images, governed by storage RLS policies                                                                           |
+| **Realtime**              | Postgres change streams over WebSocket for the shopping list                                                                                  |
+| **pg_cron / Vercel Cron** | Daily trigger for recurring expense generation                                                                                                |
 
 ---
 
@@ -138,7 +140,7 @@ No client-side fetch, no loading spinner for initial data, no API contract to ke
 
 Every Server Action executes the same seven steps, in this order:
 
-1. **Authenticate** — `supabase.auth.getUser()`, which *verifies the JWT with the auth server* rather than trusting the cookie's contents. (`getSession()` does not verify and must never be used for authorization.)
+1. **Authenticate** — `supabase.auth.getUser()`, which _verifies the JWT with the auth server_ rather than trusting the cookie's contents. (`getSession()` does not verify and must never be used for authorization.)
 2. **Validate** — parse raw input with a Zod schema. The server never trusts client-side validation; the client-side pass exists purely for fast feedback.
 3. **Authorize** — check household membership and role for the requested operation, producing a clear error before touching data.
 4. **Compute** — run the pure domain functions (split allocation, rounding) on validated input.
@@ -180,28 +182,28 @@ This is the only place the service-role key is used, because the job acts as the
 
 Route groups keep authenticated and public surfaces cleanly separated, each with its own layout.
 
-| Route | Rendering | Auth | Purpose |
-| --- | --- | --- | --- |
-| `/` | Static | Public | Landing page: problem, product, call to action |
-| `/pricing`, `/privacy`, `/terms` | Static | Public | Marketing and legal |
-| `/login` | Static + client form | Public | Magic link and Google sign-in |
-| `/auth/callback` | Route handler | Public | Exchanges the auth code for a session |
-| `/onboarding` | Dynamic | Required | First-run: create or join a household |
-| `/app` | Dynamic | Required | Cross-household dashboard: total owed/owing, recent activity |
-| `/app/households/[id]` | Dynamic | Member | Household home: balances, recent expenses, quick add |
-| `/app/households/[id]/expenses` | Dynamic | Member | Filterable, paginated ledger |
-| `/app/households/[id]/expenses/new` | Dynamic | Member | Create expense with live split preview |
-| `/app/households/[id]/expenses/[expenseId]` | Dynamic | Member | Detail: splits, receipt, revision history |
-| `/app/households/[id]/settle` | Dynamic | Member | Simplified transfers + record a payment |
-| `/app/households/[id]/shopping` | Dynamic + realtime | Member | Live shared list, checkout to expense |
-| `/app/households/[id]/insights` | Dynamic | Member | Analytics dashboard |
-| `/app/households/[id]/recurring` | Dynamic | Admin | Recurring rules |
-| `/app/households/[id]/members` | Dynamic | Member (manage: Admin) | Members, roles, invitations |
-| `/app/households/[id]/settings` | Dynamic | Admin | Name, categories, danger zone |
-| `/app/households/[id]/activity` | Dynamic | Member | Full audit trail |
-| `/app/invite/[token]` | Dynamic | Required | Invitation preview and acceptance |
-| `/app/notifications` | Dynamic | Required | Notification centre |
-| `/app/settings` | Dynamic | Required | Profile and preferences |
+| Route                                       | Rendering            | Auth                   | Purpose                                                      |
+| ------------------------------------------- | -------------------- | ---------------------- | ------------------------------------------------------------ |
+| `/`                                         | Static               | Public                 | Landing page: problem, product, call to action               |
+| `/pricing`, `/privacy`, `/terms`            | Static               | Public                 | Marketing and legal                                          |
+| `/login`                                    | Static + client form | Public                 | Magic link and Google sign-in                                |
+| `/auth/callback`                            | Route handler        | Public                 | Exchanges the auth code for a session                        |
+| `/onboarding`                               | Dynamic              | Required               | First-run: create or join a household                        |
+| `/app`                                      | Dynamic              | Required               | Cross-household dashboard: total owed/owing, recent activity |
+| `/app/households/[id]`                      | Dynamic              | Member                 | Household home: balances, recent expenses, quick add         |
+| `/app/households/[id]/expenses`             | Dynamic              | Member                 | Filterable, paginated ledger                                 |
+| `/app/households/[id]/expenses/new`         | Dynamic              | Member                 | Create expense with live split preview                       |
+| `/app/households/[id]/expenses/[expenseId]` | Dynamic              | Member                 | Detail: splits, receipt, revision history                    |
+| `/app/households/[id]/settle`               | Dynamic              | Member                 | Simplified transfers + record a payment                      |
+| `/app/households/[id]/shopping`             | Dynamic + realtime   | Member                 | Live shared list, checkout to expense                        |
+| `/app/households/[id]/insights`             | Dynamic              | Member                 | Analytics dashboard                                          |
+| `/app/households/[id]/recurring`            | Dynamic              | Admin                  | Recurring rules                                              |
+| `/app/households/[id]/members`              | Dynamic              | Member (manage: Admin) | Members, roles, invitations                                  |
+| `/app/households/[id]/settings`             | Dynamic              | Admin                  | Name, categories, danger zone                                |
+| `/app/households/[id]/activity`             | Dynamic              | Member                 | Full audit trail                                             |
+| `/app/invite/[token]`                       | Dynamic              | Required               | Invitation preview and acceptance                            |
+| `/app/notifications`                        | Dynamic              | Required               | Notification centre                                          |
+| `/app/settings`                             | Dynamic              | Required               | Profile and preferences                                      |
 
 Every dynamic page has a colocated `loading.tsx` (skeleton via Suspense) and `error.tsx` (recoverable error boundary), plus `not-found.tsx` where a bad ID is plausible.
 
@@ -239,12 +241,12 @@ Beyond household roles there is **anonymous** (marketing and auth pages only) an
 
 Enforcement is layered, and each layer has a distinct job:
 
-| Layer | Enforces | If it fails |
-| --- | --- | --- |
-| Middleware | Is there a session? | Redirect to login |
-| Server Action | Membership + role for this operation | Typed error, clear message |
-| **RLS policy** | **Row-level access, always** | **Zero rows / write rejected** |
-| DB constraints | Domain invariants (splits sum, no self-settlement) | Transaction aborted |
+| Layer              | Enforces                                           | If it fails                    |
+| ------------------ | -------------------------------------------------- | ------------------------------ |
+| Proxy (`proxy.ts`) | Is there a session?                                | Redirect to login              |
+| Server Action      | Membership + role for this operation               | Typed error, clear message     |
+| **RLS policy**     | **Row-level access, always**                       | **Zero rows / write rejected** |
+| DB constraints     | Domain invariants (splits sum, no self-settlement) | Transaction aborted            |
 
 The permission matrix itself is in [PRD §8.1](./01-product-requirements.md#81-roles--permissions); the SQL policies that implement it are in [Technical Spec §4](./03-technical-spec.md).
 
@@ -252,24 +254,24 @@ The permission matrix itself is in [PRD §8.1](./01-product-requirements.md#81-r
 
 ## 8. External Libraries & Services — and why
 
-| Choice | Purpose | Why this, and what we rejected |
-| --- | --- | --- |
-| **Next.js (App Router)** | Full-stack React framework | Required by the assignment. The App Router specifically gives Server Components (no client fetch for reads) and Server Actions (typed writes), which shape the whole architecture. |
-| **TypeScript (strict)** | Type safety | Required. Database types are *generated* from the schema, so a migration that renames a column breaks the build rather than production. |
-| **Supabase** | Postgres, Auth, Storage, Realtime | Required. Choosing it as one integrated platform avoids stitching together four vendors, and RLS lets authorization live with the data. |
-| **@supabase/ssr** | Cookie-based sessions across server/client | The only correct way to share an auth session between Server Components, Server Actions and the browser client. |
-| **Tailwind CSS** | Styling | Colocated styles, no naming overhead, a design system by constraint. Rejected CSS Modules (verbose at this scale) and a component library with baked-in styling (harder to make it feel bespoke). |
-| **shadcn/ui + Radix** | Accessible UI primitives | Source is copied into the repo, so it is *our* code and fully customisable. Radix supplies correct keyboard interaction and ARIA for dialogs, menus and popovers — accessibility that is genuinely hard to write from scratch. Rejected MUI/Chakra as heavy and hard to differentiate visually. |
-| **Zod** | Runtime validation | One schema definition yields both the runtime guard and the static TypeScript type, used identically on client and server. Without it, "validated" input is only a compile-time fiction. |
-| **react-hook-form** | Form state | Uncontrolled inputs mean typing doesn't re-render the form — noticeable on the split editor with many participant rows. Integrates with Zod through a resolver. |
-| **Recharts** | Charts | Declarative React components, responsive, small enough for our four chart types. Rejected D3 (far more power than needed) and Chart.js (imperative, canvas-based, awkward in React). |
-| **date-fns** | Dates | Tree-shakeable pure functions; only the handful we use ship. Rejected Moment (large, mutable, deprecated). |
-| **Resend + React Email** | Transactional email | Emails authored as React components, so invitation emails share styling with the app. Only used for invites and reminders. |
-| **Vitest** | Unit/integration tests | Same transform pipeline as the app, extremely fast, Jest-compatible API. |
-| **React Testing Library** | Component tests | Tests behaviour through the accessibility tree rather than implementation details. |
-| **Playwright** | End-to-end tests | Real browsers, and critically **multiple isolated browser contexts in one test** — the only practical way to test two roommates interacting live. |
-| **Sentry** | Error monitoring | Production errors are invisible otherwise. Source-mapped stack traces with user and household context. |
-| **Vercel** | Hosting | Required. Preview deployment per pull request, edge middleware, and managed cron. |
+| Choice                    | Purpose                                    | Why this, and what we rejected                                                                                                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Next.js (App Router)**  | Full-stack React framework                 | Required by the assignment. The App Router specifically gives Server Components (no client fetch for reads) and Server Actions (typed writes), which shape the whole architecture.                                                                                                              |
+| **TypeScript (strict)**   | Type safety                                | Required. Database types are _generated_ from the schema, so a migration that renames a column breaks the build rather than production.                                                                                                                                                         |
+| **Supabase**              | Postgres, Auth, Storage, Realtime          | Required. Choosing it as one integrated platform avoids stitching together four vendors, and RLS lets authorization live with the data.                                                                                                                                                         |
+| **@supabase/ssr**         | Cookie-based sessions across server/client | The only correct way to share an auth session between Server Components, Server Actions and the browser client.                                                                                                                                                                                 |
+| **Tailwind CSS**          | Styling                                    | Colocated styles, no naming overhead, a design system by constraint. Rejected CSS Modules (verbose at this scale) and a component library with baked-in styling (harder to make it feel bespoke).                                                                                               |
+| **shadcn/ui + Radix**     | Accessible UI primitives                   | Source is copied into the repo, so it is _our_ code and fully customisable. Radix supplies correct keyboard interaction and ARIA for dialogs, menus and popovers — accessibility that is genuinely hard to write from scratch. Rejected MUI/Chakra as heavy and hard to differentiate visually. |
+| **Zod**                   | Runtime validation                         | One schema definition yields both the runtime guard and the static TypeScript type, used identically on client and server. Without it, "validated" input is only a compile-time fiction.                                                                                                        |
+| **react-hook-form**       | Form state                                 | Uncontrolled inputs mean typing doesn't re-render the form — noticeable on the split editor with many participant rows. Integrates with Zod through a resolver.                                                                                                                                 |
+| **Recharts**              | Charts                                     | Declarative React components, responsive, small enough for our four chart types. Rejected D3 (far more power than needed) and Chart.js (imperative, canvas-based, awkward in React).                                                                                                            |
+| **date-fns**              | Dates                                      | Tree-shakeable pure functions; only the handful we use ship. Rejected Moment (large, mutable, deprecated).                                                                                                                                                                                      |
+| **Resend + React Email**  | Transactional email                        | Emails authored as React components, so invitation emails share styling with the app. Only used for invites and reminders.                                                                                                                                                                      |
+| **Vitest**                | Unit/integration tests                     | Same transform pipeline as the app, extremely fast, Jest-compatible API.                                                                                                                                                                                                                        |
+| **React Testing Library** | Component tests                            | Tests behaviour through the accessibility tree rather than implementation details.                                                                                                                                                                                                              |
+| **Playwright**            | End-to-end tests                           | Real browsers, and critically **multiple isolated browser contexts in one test** — the only practical way to test two roommates interacting live.                                                                                                                                               |
+| **Sentry**                | Error monitoring                           | Production errors are invisible otherwise. Source-mapped stack traces with user and household context.                                                                                                                                                                                          |
+| **Vercel**                | Hosting                                    | Required. Preview deployment per pull request, the proxy layer, and managed cron scheduling.                                                                                                                                                                                                    |
 
 Every dependency above is justified by a capability we would otherwise have to build. Anything that only saves typing was rejected — dependency count is a maintenance and security cost.
 
@@ -277,11 +279,11 @@ Every dependency above is justified by a capability we would otherwise have to b
 
 ## 9. Environments
 
-| Environment | Frontend | Database | Purpose |
-| --- | --- | --- | --- |
-| Local | `next dev` | Supabase CLI (Docker, local Postgres) | Development; destructive resets are free |
-| Preview | Vercel preview per PR | Shared staging Supabase project | Review and E2E runs before merge |
-| Production | Vercel production | Dedicated Supabase project | Live users |
+| Environment | Frontend              | Database                              | Purpose                                  |
+| ----------- | --------------------- | ------------------------------------- | ---------------------------------------- |
+| Local       | `next dev`            | Supabase CLI (Docker, local Postgres) | Development; destructive resets are free |
+| Preview     | Vercel preview per PR | Shared staging Supabase project       | Review and E2E runs before merge         |
+| Production  | Vercel production     | Dedicated Supabase project            | Live users                               |
 
 Schema changes are **only ever** applied as versioned SQL migration files in `supabase/migrations/`, committed to git, and applied via CI. Nobody edits production schema through a dashboard — that path produces environments that silently diverge and a schema with no history.
 
@@ -303,14 +305,14 @@ Schema changes are **only ever** applied as versioned SQL migration files in `su
 
 Recorded ADR-style, since "justify every technical decision" is explicitly graded.
 
-**ADR-1 — RLS as the authorization boundary.** *Alternative:* enforce access only in application code. *Chosen because* application checks are opt-in and one forgotten filter leaks data, whereas RLS is default-deny and applies to every path including Realtime and Storage. *Cost:* policies are harder to debug and can recurse; mitigated with `SECURITY DEFINER` helper functions and a dedicated test suite that queries as two real users.
+**ADR-1 — RLS as the authorization boundary.** _Alternative:_ enforce access only in application code. _Chosen because_ application checks are opt-in and one forgotten filter leaks data, whereas RLS is default-deny and applies to every path including Realtime and Storage. _Cost:_ policies are harder to debug and can recurse; mitigated with `SECURITY DEFINER` helper functions and a dedicated test suite that queries as two real users.
 
-**ADR-2 — Derive balances, never store them.** *Alternative:* a `balances` table updated on every write. *Chosen because* derived values cannot drift, and correctness matters more than microseconds at household scale. *Cost:* recomputation per view; mitigated by computing in SQL with covering indexes, with a materialized view available if a household ever grew large enough to need it.
+**ADR-2 — Derive balances, never store them.** _Alternative:_ a `balances` table updated on every write. _Chosen because_ derived values cannot drift, and correctness matters more than microseconds at household scale. _Cost:_ recomputation per view; mitigated by computing in SQL with covering indexes, with a materialized view available if a household ever grew large enough to need it.
 
-**ADR-3 — Integer minor units for all money.** *Alternative:* floating point or `numeric`. *Chosen because* binary floats cannot represent 0.1 exactly and errors compound across splits; integers make every operation exact and every test deterministic. *Cost:* explicit formatting at the display boundary — a single well-tested module.
+**ADR-3 — Integer minor units for all money.** _Alternative:_ floating point or `numeric`. _Chosen because_ binary floats cannot represent 0.1 exactly and errors compound across splits; integers make every operation exact and every test deterministic. _Cost:_ explicit formatting at the display boundary — a single well-tested module.
 
-**ADR-4 — Server-first data flow with no client data-fetching library.** *Alternative:* TanStack Query over REST routes. *Chosen because* Server Components remove the need for a client cache entirely for the 90% of the app that is read-render-mutate-revalidate, eliminating a whole category of stale-cache bugs and a large client bundle. *Cost:* interactive surfaces need bespoke optimistic handling; accepted because only the shopping list truly needs it.
+**ADR-4 — Server-first data flow with no client data-fetching library.** _Alternative:_ TanStack Query over REST routes. _Chosen because_ Server Components remove the need for a client cache entirely for the 90% of the app that is read-render-mutate-revalidate, eliminating a whole category of stale-cache bugs and a large client bundle. _Cost:_ interactive surfaces need bespoke optimistic handling; accepted because only the shopping list truly needs it.
 
-**ADR-5 — Multi-table writes inside Postgres functions.** *Alternative:* sequential `insert` calls from Node. *Chosen because* an expense without its splits is corrupt data, and PostgREST cannot span multiple statements in one transaction. *Cost:* business logic split across TypeScript and SQL; mitigated by keeping *decisions* in TypeScript and only *atomic persistence* in SQL.
+**ADR-5 — Multi-table writes inside Postgres functions.** _Alternative:_ sequential `insert` calls from Node. _Chosen because_ an expense without its splits is corrupt data, and PostgREST cannot span multiple statements in one transaction. _Cost:_ business logic split across TypeScript and SQL; mitigated by keeping _decisions_ in TypeScript and only _atomic persistence_ in SQL.
 
-**ADR-6 — Soft deletes and an append-only audit log.** *Alternative:* hard deletes. *Chosen because* the product's core value is trust, and a member must be able to see that an expense existed and was removed by whom. *Cost:* every query must filter `deleted_at is null`; enforced through a shared data-access layer and partial indexes.
+**ADR-6 — Soft deletes and an append-only audit log.** _Alternative:_ hard deletes. _Chosen because_ the product's core value is trust, and a member must be able to see that an expense existed and was removed by whom. _Cost:_ every query must filter `deleted_at is null`; enforced through a shared data-access layer and partial indexes.

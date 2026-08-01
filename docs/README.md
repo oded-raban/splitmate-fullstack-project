@@ -7,17 +7,17 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 
 ## Documents
 
-| # | Document | Status | Covers |
-| --- | --- | --- | --- |
-| 01 | [Product Requirements (PRD)](./01-product-requirements.md) | ✅ Complete | Problem, users, customer, business goals, capabilities, 12 key workflows, roles, scope, non-goals, risks |
-| 02 | [Architecture Design](./02-architecture.md) | ✅ Complete | Components, database rationale, data flows, page inventory, action/route inventory, permissions, library justifications, ADRs |
-| 03 | [Technical Specification](./03-technical-spec.md) | ✅ Complete | Directory structure, component architecture, full schema, RLS, RPCs, algorithms, CRUD catalogue, state, errors, validation, UX |
-| 04 | Test Plan | ⏳ Phase 9 | What must be tested and why, per workflow |
-| 05 | Scalability | ⏳ Phase 10 | Bottlenecks, indexing, pagination, limits, future work |
-| 06 | Security | ⏳ Phase 10 | AuthN/AuthZ, data isolation, validation, secrets, residual risk |
-| 07 | Internal Wiki / Code Map | ⏳ Phase 11 | Key files, core flows, technical choices |
-| 08 | Presentation Q&A Prep | ⏳ Phase 11 | Anticipated technical questions and answers |
-| — | Root `README.md` | ⏳ Phase 6 | Local setup, environment variables, live links |
+| #   | Document                                                   | Status      | Covers                                                                                                                         |
+| --- | ---------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 01  | [Product Requirements (PRD)](./01-product-requirements.md) | ✅ Complete | Problem, users, customer, business goals, capabilities, 12 key workflows, roles, scope, non-goals, risks                       |
+| 02  | [Architecture Design](./02-architecture.md)                | ✅ Complete | Components, database rationale, data flows, page inventory, action/route inventory, permissions, library justifications, ADRs  |
+| 03  | [Technical Specification](./03-technical-spec.md)          | ✅ Complete | Directory structure, component architecture, full schema, RLS, RPCs, algorithms, CRUD catalogue, state, errors, validation, UX |
+| 04  | Test Plan                                                  | ⏳ Phase 9  | What must be tested and why, per workflow                                                                                      |
+| 05  | Scalability                                                | ⏳ Phase 10 | Bottlenecks, indexing, pagination, limits, future work                                                                         |
+| 06  | Security                                                   | ⏳ Phase 10 | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
+| 07  | Internal Wiki / Code Map                                   | ⏳ Phase 11 | Key files, core flows, technical choices                                                                                       |
+| 08  | Presentation Q&A Prep                                      | ⏳ Phase 11 | Anticipated technical questions and answers                                                                                    |
+| —   | Root `README.md`                                           | ⏳ Phase 6  | Local setup, environment variables, live links                                                                                 |
 
 ---
 
@@ -25,39 +25,39 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 
 Every numbered requirement in `project-requirements.md`, mapped to where it is satisfied.
 
-| Requirement | Where |
-| --- | --- |
-| 1. Product selection with business value | [PRD §1–§4](./01-product-requirements.md) |
-| 2. Product specification document | [PRD](./01-product-requirements.md) — problem, users, customer, business goals, capabilities, key processes |
-| 3. Software architecture design | [Architecture](./02-architecture.md) — components, DB, pages, actions/routes, data flow, roles, external services |
-| 4. Detailed technical specification | [Technical Spec](./03-technical-spec.md) — structure, components, schema, CRUD, API, business logic, state, errors, validation, UX |
-| 5. Implementation (Next.js, TypeScript, Supabase, Vercel) | Phases 2–8 |
-| 6. Test plan document | Phase 9 → `docs/04-test-plan.md` |
-| 7. Test implementation (Vitest, RTL, Playwright) | Phase 9 → `tests/` |
-| 8. Scalability document | Phase 10 → `docs/05-scalability.md` |
-| 9. Security document | Phase 10 → `docs/06-security.md` |
-| 10. Deployment & release | Phase 6 (initial), Phase 11 (final) |
-| 11. Coding-agent accountability | Every module carries explanatory comments; Deliverable 07 + 08 exist so the code can be defended line by line |
-| 12. Presentation | Phase 11 → slide deck + Q&A prep |
+| Requirement                                               | Where                                                                                                                              |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Product selection with business value                  | [PRD §1–§4](./01-product-requirements.md)                                                                                          |
+| 2. Product specification document                         | [PRD](./01-product-requirements.md) — problem, users, customer, business goals, capabilities, key processes                        |
+| 3. Software architecture design                           | [Architecture](./02-architecture.md) — components, DB, pages, actions/routes, data flow, roles, external services                  |
+| 4. Detailed technical specification                       | [Technical Spec](./03-technical-spec.md) — structure, components, schema, CRUD, API, business logic, state, errors, validation, UX |
+| 5. Implementation (Next.js, TypeScript, Supabase, Vercel) | Phases 2–8                                                                                                                         |
+| 6. Test plan document                                     | Phase 9 → `docs/04-test-plan.md`                                                                                                   |
+| 7. Test implementation (Vitest, RTL, Playwright)          | Phase 9 → `tests/`                                                                                                                 |
+| 8. Scalability document                                   | Phase 10 → `docs/05-scalability.md`                                                                                                |
+| 9. Security document                                      | Phase 10 → `docs/06-security.md`                                                                                                   |
+| 10. Deployment & release                                  | Phase 6 (initial), Phase 11 (final)                                                                                                |
+| 11. Coding-agent accountability                           | Every module carries explanatory comments; Deliverable 07 + 08 exist so the code can be defended line by line                      |
+| 12. Presentation                                          | Phase 11 → slide deck + Q&A prep                                                                                                   |
 
 ---
 
 ## Roadmap
 
-| Phase | Contents | Milestone |
-| --- | --- | --- |
-| 0 | Repo scaffold, tooling, CI, Supabase projects | — |
-| **1** | **PRD, architecture, technical spec** | **M1 ✅** |
-| 2 | Migrations, constraints, RLS, RPCs, seeds, generated types | M2 |
-| 3 | Auth, households, invitations | M3 |
-| 4 | Expense engine: domain layer, CRUD, history | M4 |
-| 5 | Balances, settlements, activity feed — **MVP complete** | M5 |
-| 6 | Deploy to Vercel + production Supabase | M6 |
-| 7 | Realtime shopping list, receipts | M7 |
-| 8 | Recurring automation, notifications, insights, CSV | M8 |
-| 9 | Test plan + Vitest / RTL / RLS / Playwright suites | M9 |
-| 10 | Security & scalability documents plus hardening | M10 |
-| 11 | README, wiki, slide deck, Q&A prep | M11 |
+| Phase | Contents                                                   | Milestone |
+| ----- | ---------------------------------------------------------- | --------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅        |
+| **1** | **PRD, architecture, technical spec**                      | **M1 ✅** |
+| 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | M2 — SQL written; awaiting a database to apply against |
+| 3     | Auth, households, invitations                              | M3        |
+| 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅ |
+| 5     | Balances, settlements, activity feed — **MVP complete**    | M5        |
+| 6     | Deploy to Vercel + production Supabase                     | M6        |
+| 7     | Realtime shopping list, receipts                           | M7        |
+| 8     | Recurring automation, notifications, insights, CSV         | M8        |
+| 9     | Test plan + Vitest / RTL / RLS / Playwright suites         | M9        |
+| 10    | Security & scalability documents plus hardening            | M10       |
+| 11    | README, wiki, slide deck, Q&A prep                         | M11       |
 
 ---
 

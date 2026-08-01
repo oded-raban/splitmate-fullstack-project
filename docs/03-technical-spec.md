@@ -1,9 +1,9 @@
 # SplitMate — Detailed Technical Specification
 
-| Field | Value |
-| --- | --- |
-| Document | Technical Design (Deliverable #4, part 2) |
-| Version | 1.0 |
+| Field        | Value                                                                      |
+| ------------ | -------------------------------------------------------------------------- |
+| Document     | Technical Design (Deliverable #4, part 2)                                  |
+| Version      | 1.0                                                                        |
 | Related docs | [PRD](./01-product-requirements.md) · [Architecture](./02-architecture.md) |
 
 The purpose of this document is to make implementation mechanical: by the end of it, every table, constraint, policy, function signature, algorithm, error code and screen is decided. Nothing below should require a design decision during coding.
@@ -74,7 +74,7 @@ splitmate/
 │   ├── supabase/
 │   │   ├── server.ts                # RSC / Server Action client (user JWT)
 │   │   ├── client.ts                # Browser client (Realtime)
-│   │   ├── middleware.ts            # Session refresh helper
+│   │   ├── proxy.ts                 # Session refresh helper for proxy.ts
 │   │   ├── admin.ts                 # service-role — cron only
 │   │   └── database.types.ts        # GENERATED — never hand-edited
 │   ├── data/                        # Query functions used by Server Components
@@ -99,11 +99,25 @@ splitmate/
 │
 ├── docs/                            # All course deliverables
 ├── emails/                          # React Email templates
-├── middleware.ts
-└── config files (next, tsconfig, tailwind, vitest, playwright, eslint)
+├── types/env.d.ts                   # Typed process.env keys
+├── proxy.ts                         # Session refresh + route guard + headers
+└── config files (next, tsconfig, vitest, playwright, eslint, prettier)
 ```
 
 **The load-bearing rule:** `lib/domain` may not import from `lib/supabase`, `next`, or `react`. Enforced by an ESLint `no-restricted-imports` rule. This keeps the financially critical code testable in isolation.
+
+### 1.1 Platform version constraints
+
+The project is built on **Next.js 16**, which changed several conventions that older documentation and most existing tutorials still describe the old way. These are recorded here because they affect nearly every file we write:
+
+| Change                                                           | Consequence for this codebase                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `middleware.ts` → **`proxy.ts`**, exporting `proxy`              | The session-refresh and route-guard file sits at the project root as `proxy.ts`. It runs on the **Node.js runtime**; the edge runtime is not available to it.                                                                                      |
+| **Request APIs are async-only**                                  | `cookies()`, `headers()`, and the `params` / `searchParams` props of pages, layouts and route handlers are Promises. Every Supabase server client and every dynamic page must `await` them. Synchronous access was removed, not merely deprecated. |
+| **Turbopack is the default** bundler                             | No `--turbopack` flag in the npm scripts.                                                                                                                                                                                                          |
+| **`next lint` removed**                                          | Linting runs through the ESLint CLI, and `next build` no longer lints — so lint must be a separate CI step, or it silently stops running.                                                                                                          |
+| `revalidateTag` requires a cache-life profile; `updateTag` added | Server Actions that need read-your-writes semantics use `updateTag`; `revalidatePath` is unchanged and remains our primary invalidation tool.                                                                                                      |
+| Generated `PageProps` / `LayoutProps` / `RouteContext` helpers   | Route props are typed from the actual route string, so a renamed dynamic segment becomes a compile error.                                                                                                                                          |
 
 ---
 
@@ -113,25 +127,25 @@ splitmate/
 
 Default to Server Components. A component becomes a client component only if it needs state, effects, browser APIs, or event handlers. Client components are pushed as far down the tree as possible so that pages stay server-rendered — the pattern is a server page that fetches data and passes it as props into a small interactive island.
 
-| Component | Type | Responsibility |
-| --- | --- | --- |
-| `HouseholdLayout` | Server | Membership guard; loads household + members once for the subtree |
-| `BalanceSummary` | Server | Renders the result of `get_household_balances` |
-| `ExpenseList` | Server | Paginated ledger rows |
-| `ExpenseFilters` | Client | Writes filter state to the URL (`searchParams`) |
-| `ExpenseForm` | Client | react-hook-form + Zod; orchestrates `SplitEditor` |
-| `SplitEditor` | Client | Split method tabs, per-participant inputs, live remainder |
-| `SplitPreview` | Client | Pure render of computed shares — calls the same domain function the server does |
-| `ReceiptUploader` | Client | Compression, progress, retry |
-| `SettlementSuggestions` | Server | Simplified transfer list |
-| `SettleDialog` | Client | Confirmation + amount override |
-| `ShoppingListView` | Client | Realtime subscription + optimistic reducer |
-| `InsightsCharts` | Client | Recharts, dynamically imported |
-| `NotificationBell` | Client | Unread count + dropdown |
+| Component               | Type   | Responsibility                                                                  |
+| ----------------------- | ------ | ------------------------------------------------------------------------------- |
+| `HouseholdLayout`       | Server | Membership guard; loads household + members once for the subtree                |
+| `BalanceSummary`        | Server | Renders the result of `get_household_balances`                                  |
+| `ExpenseList`           | Server | Paginated ledger rows                                                           |
+| `ExpenseFilters`        | Client | Writes filter state to the URL (`searchParams`)                                 |
+| `ExpenseForm`           | Client | react-hook-form + Zod; orchestrates `SplitEditor`                               |
+| `SplitEditor`           | Client | Split method tabs, per-participant inputs, live remainder                       |
+| `SplitPreview`          | Client | Pure render of computed shares — calls the same domain function the server does |
+| `ReceiptUploader`       | Client | Compression, progress, retry                                                    |
+| `SettlementSuggestions` | Server | Simplified transfer list                                                        |
+| `SettleDialog`          | Client | Confirmation + amount override                                                  |
+| `ShoppingListView`      | Client | Realtime subscription + optimistic reducer                                      |
+| `InsightsCharts`        | Client | Recharts, dynamically imported                                                  |
+| `NotificationBell`      | Client | Unread count + dropdown                                                         |
 
 ### 2.2 Two patterns worth naming
 
-**Shared computation across the boundary.** `SplitEditor` computes the preview with `lib/domain/splits.ts`, and the Server Action recomputes with *the same function* on submit. The client result is advisory; the server result is authoritative. Identical code on both sides means the preview can never disagree with the saved value — while the server still never trusts client-supplied shares.
+**Shared computation across the boundary.** `SplitEditor` computes the preview with `lib/domain/splits.ts`, and the Server Action recomputes with _the same function_ on submit. The client result is advisory; the server result is authoritative. Identical code on both sides means the preview can never disagree with the saved value — while the server still never trusts client-supplied shares.
 
 **Optimistic mutation.** Interactive lists wrap actions in `useOptimistic`: apply locally, call the action, and on failure roll back and show a toast naming what failed. For the shopping list this composes with Realtime — the optimistic entry is replaced by the authoritative row when the broadcast arrives, matched by a client-generated UUID sent with the insert.
 
@@ -414,7 +428,7 @@ returns boolean language sql security definer stable set search_path = public as
 $$;
 ```
 
-**Why `SECURITY DEFINER` is mandatory here.** A policy on `household_members` that itself queries `household_members` triggers that table's policies again — infinite recursion, and Postgres aborts with `42P17`. A `SECURITY DEFINER` function executes as its owner and therefore bypasses RLS *inside* the function, breaking the cycle. `set search_path = public` is a required hardening step: without it, a caller could shadow `household_members` with a temp table and hijack a function running with elevated privileges. These two lines are worth memorising for the presentation.
+**Why `SECURITY DEFINER` is mandatory here.** A policy on `household_members` that itself queries `household_members` triggers that table's policies again — infinite recursion, and Postgres aborts with `42P17`. A `SECURITY DEFINER` function executes as its owner and therefore bypasses RLS _inside_ the function, breaking the cycle. `set search_path = public` is a required hardening step: without it, a caller could shadow `household_members` with a temp table and hijack a function running with elevated privileges. These two lines are worth memorising for the presentation.
 
 ### 4.2 Policies
 
@@ -474,7 +488,7 @@ create policy activity_select on activity_log for select
   using (is_household_member(household_id));
 ```
 
-*(Table-by-table policies for invitations, categories, shopping, recurring and revisions follow the same shape and are written in full in the migration files.)*
+_(Table-by-table policies for invitations, categories, shopping, recurring and revisions follow the same shape and are written in full in the migration files.)_
 
 **Invitations get one deliberate exception:** an invitee is by definition not yet a member, so acceptance runs through a `SECURITY DEFINER` RPC (`accept_invitation(token)`) that looks the invitation up by token hash, validates expiry/revocation/acceptance, and inserts the membership — rather than opening a readable policy on the invitations table.
 
@@ -494,16 +508,16 @@ Reads are served through short-lived signed URLs (60 s), so a leaked URL expires
 
 ## 5. SQL Functions (RPCs)
 
-| Function | Returns | Purpose |
-| --- | --- | --- |
-| `create_expense_with_splits(payload jsonb)` | `uuid` | Atomically insert expense + splits + activity + notifications |
-| `update_expense_with_splits(id, payload)` | `void` | Same, plus a revision record; optimistic-concurrency checked |
-| `get_household_balances(hid)` | `table(user_id, paid, owed, settled_out, settled_in, net)` | Net position per member |
-| `get_monthly_breakdown(hid, from, to)` | `table(month, category_id, total)` | Analytics aggregation |
-| `get_member_stats(hid, from, to)` | `table(user_id, paid, consumed)` | Fairness view |
-| `accept_invitation(token)` | `uuid` | Validate token and join household |
-| `checkout_shopping_items(list, ids, payload)` | `uuid` | Convert checked items into one expense |
-| `settle_up(hid, from, to, amount, method, note)` | `uuid` | Record a settlement with validation |
+| Function                                         | Returns                                                    | Purpose                                                       |
+| ------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| `create_expense_with_splits(payload jsonb)`      | `uuid`                                                     | Atomically insert expense + splits + activity + notifications |
+| `update_expense_with_splits(id, payload)`        | `void`                                                     | Same, plus a revision record; optimistic-concurrency checked  |
+| `get_household_balances(hid)`                    | `table(user_id, paid, owed, settled_out, settled_in, net)` | Net position per member                                       |
+| `get_monthly_breakdown(hid, from, to)`           | `table(month, category_id, total)`                         | Analytics aggregation                                         |
+| `get_member_stats(hid, from, to)`                | `table(user_id, paid, consumed)`                           | Fairness view                                                 |
+| `accept_invitation(token)`                       | `uuid`                                                     | Validate token and join household                             |
+| `checkout_shopping_items(list, ids, payload)`    | `uuid`                                                     | Convert checked items into one expense                        |
+| `settle_up(hid, from, to, amount, method, note)` | `uuid`                                                     | Record a settlement with validation                           |
 
 The balance function, which is the analytical heart of the product:
 
@@ -559,7 +573,7 @@ $$;
 ### 6.1 Money
 
 ```ts
-export type Minor = number & { readonly __brand: 'MinorUnits' };
+export type Minor = number & { readonly __brand: "MinorUnits" };
 ```
 
 A branded type makes it a compile-time error to pass a display float where minor units are expected. Rules: parse user input from a decimal string to minor units once, at the boundary; never use floating-point arithmetic on money; format only at render time via `Intl.NumberFormat`. Parsing is defensive — it accepts `1,234.5`, `₪12`, and `12.` while rejecting `12.345`, `NaN`, `Infinity`, and anything exceeding the ceiling.
@@ -570,7 +584,7 @@ All four funnel into one allocator so that rounding behaves identically everywhe
 
 **Equal.** `base = floor(total / n)`, `remainder = total − base·n`. The remainder (strictly `< n` agorot) is distributed one unit each to the first `remainder` participants, ordered by a **deterministic rotation seeded by the expense id**. Rotating rather than always favouring the same sorted-first user means that over many expenses the sub-agora advantage evens out — a small fairness touch that is easy to explain and easy to test.
 
-**Exact.** The user supplies each share directly. Validation rejects the submission unless the shares sum *exactly* to the total; the UI shows the live remainder ("₪1.00 left to assign") so the user is never guessing.
+**Exact.** The user supplies each share directly. Validation rejects the submission unless the shares sum _exactly_ to the total; the UI shows the live remainder ("₪1.00 left to assign") so the user is never guessing.
 
 **Percentage.** Percentages must sum to 100 within a 0.01 tolerance. Each raw share is `total · pct / 100`; taking `floor` of each leaves a remainder distributed by the **largest-remainder method** — the participant whose truncated fraction was largest receives the first spare agora. This is the same algorithm used for apportioning parliamentary seats, and it is the standard correct answer to "how do you split ₪100 three ways."
 
@@ -579,7 +593,7 @@ All four funnel into one allocator so that rounding behaves identically everywhe
 ```ts
 function allocate(total: Minor, weights: number[], seed: string): Minor[] {
   const sum = weights.reduce((a, b) => a + b, 0);
-  const raw    = weights.map(w => (total * w) / sum);
+  const raw = weights.map((w) => (total * w) / sum);
   const floors = raw.map(Math.floor);
   let remainder = total - floors.reduce((a, b) => a + b, 0);
 
@@ -615,7 +629,7 @@ This greedy algorithm produces **at most n−1 transfers** for n members, typica
 
 A concrete example worth walking through in the demo: A owes B ₪50, B owes C ₪50, and C owes A ₪20. Settled pairwise that is three separate payments. Netting them out gives positions of A −30, B 0, C +30, so the entire tangle collapses into **one** payment of ₪30 from A to C, and B — who is square — is not involved at all.
 
-**The honest caveat, which is exactly the kind of nuance that scores well:** minimising the number of transfers exactly is NP-hard (it reduces to a partition/subset-sum problem), so this greedy approach is a heuristic with a guaranteed `n−1` bound, not a proven optimum. We document that rather than claiming optimality. Correctness properties that *are* guaranteed and are tested: transfers conserve total value, every net position reaches zero, no member both sends and receives, and no transfer is negative.
+**The honest caveat, which is exactly the kind of nuance that scores well:** minimising the number of transfers exactly is NP-hard (it reduces to a partition/subset-sum problem), so this greedy approach is a heuristic with a guaranteed `n−1` bound, not a proven optimum. We document that rather than claiming optimality. Correctness properties that _are_ guaranteed and are tested: transfers conserve total value, every net position reaches zero, no member both sends and receives, and no transfer is negative.
 
 ### 6.4 Recurrence
 
@@ -627,27 +641,27 @@ Next-occurrence calculation clamps overflow days (a monthly rule on the 31st fir
 
 Every action shares the signature `(input: unknown) => Promise<ActionResult<T>>` and the seven-step pipeline from [Architecture §4.2](./02-architecture.md#42-write-path).
 
-| Action | Auth | Input (Zod) | Effects | Errors |
-| --- | --- | --- | --- | --- |
-| `createHousehold` | user | `{name, currency}` | household + owner membership + default categories + list | `VALIDATION` |
-| `updateHousehold` | admin | `{id, name?, timezone?}` | update | `FORBIDDEN`, `NOT_FOUND` |
-| `leaveHousehold` | member | `{id}` | delete membership | `OWNER_MUST_TRANSFER`, `OUTSTANDING_BALANCE` |
-| `createInvitation` | admin | `{householdId, email?, role}` | token + hash + optional email | `MEMBER_LIMIT`, `ALREADY_MEMBER` |
-| `acceptInvitation` | user | `{token}` | RPC → membership + notify | `INVITE_EXPIRED/REVOKED/USED`, `EMAIL_MISMATCH` |
-| `changeMemberRole` | owner | `{householdId, userId, role}` | update role | `FORBIDDEN`, `LAST_OWNER` |
-| `removeMember` | admin | `{householdId, userId}` | delete membership | `OUTSTANDING_BALANCE` |
-| **`createExpense`** | member | `{householdId, description, amount, payerId, categoryId?, spentAt, note?, splitMethod, participants[], idempotencyKey}` | RPC: expense + splits + activity + notifications | `VALIDATION`, `SPLIT_IMBALANCE`, `NOT_MEMBER`, `DUPLICATE` |
-| `updateExpense` | payer/creator/admin | above + `{id, updatedAt}` | RPC: update + revision | `FORBIDDEN`, `CONFLICT` |
-| `deleteExpense` | payer/creator/admin | `{id}` | soft delete + activity | `FORBIDDEN` |
-| `restoreExpense` | admin | `{id}` | clear `deleted_at` | `FORBIDDEN` |
-| `attachReceipt` | payer/admin | `{expenseId, path}` | set `receipt_path` | `INVALID_FILE` |
-| `createSettlement` | party | `{householdId, fromUser, toUser, amount, method, note?}` | RPC + notify | `SELF_SETTLEMENT`, `NOT_MEMBER`, `EXCEEDS_BALANCE`(warn) |
-| `voidSettlement` | party/admin | `{id, reason}` | set `voided_at` | `FORBIDDEN`, `ALREADY_VOID` |
-| `addShoppingItem` | member | `{listId, name, quantity?, estimated?, clientId}` | insert → Realtime broadcast | `VALIDATION` |
-| `toggleShoppingItem` | member | `{id, checked}` | update `checked_by/at` (idempotent) | `NOT_FOUND` |
-| `checkoutShoppingItems` | member | `{listId, itemIds[], expensePayload}` | RPC: expense + archive items | `NO_ITEMS`, `SPLIT_IMBALANCE` |
-| `createRecurringRule` | admin | template + schedule | insert + compute `next_run_at` | `VALIDATION` |
-| `markNotificationsRead` | user | `{ids[]?}` | update | — |
+| Action                  | Auth                | Input (Zod)                                                                                                             | Effects                                                  | Errors                                                     |
+| ----------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| `createHousehold`       | user                | `{name, currency}`                                                                                                      | household + owner membership + default categories + list | `VALIDATION`                                               |
+| `updateHousehold`       | admin               | `{id, name?, timezone?}`                                                                                                | update                                                   | `FORBIDDEN`, `NOT_FOUND`                                   |
+| `leaveHousehold`        | member              | `{id}`                                                                                                                  | delete membership                                        | `OWNER_MUST_TRANSFER`, `OUTSTANDING_BALANCE`               |
+| `createInvitation`      | admin               | `{householdId, email?, role}`                                                                                           | token + hash + optional email                            | `MEMBER_LIMIT`, `ALREADY_MEMBER`                           |
+| `acceptInvitation`      | user                | `{token}`                                                                                                               | RPC → membership + notify                                | `INVITE_EXPIRED/REVOKED/USED`, `EMAIL_MISMATCH`            |
+| `changeMemberRole`      | owner               | `{householdId, userId, role}`                                                                                           | update role                                              | `FORBIDDEN`, `LAST_OWNER`                                  |
+| `removeMember`          | admin               | `{householdId, userId}`                                                                                                 | delete membership                                        | `OUTSTANDING_BALANCE`                                      |
+| **`createExpense`**     | member              | `{householdId, description, amount, payerId, categoryId?, spentAt, note?, splitMethod, participants[], idempotencyKey}` | RPC: expense + splits + activity + notifications         | `VALIDATION`, `SPLIT_IMBALANCE`, `NOT_MEMBER`, `DUPLICATE` |
+| `updateExpense`         | payer/creator/admin | above + `{id, updatedAt}`                                                                                               | RPC: update + revision                                   | `FORBIDDEN`, `CONFLICT`                                    |
+| `deleteExpense`         | payer/creator/admin | `{id}`                                                                                                                  | soft delete + activity                                   | `FORBIDDEN`                                                |
+| `restoreExpense`        | admin               | `{id}`                                                                                                                  | clear `deleted_at`                                       | `FORBIDDEN`                                                |
+| `attachReceipt`         | payer/admin         | `{expenseId, path}`                                                                                                     | set `receipt_path`                                       | `INVALID_FILE`                                             |
+| `createSettlement`      | party               | `{householdId, fromUser, toUser, amount, method, note?}`                                                                | RPC + notify                                             | `SELF_SETTLEMENT`, `NOT_MEMBER`, `EXCEEDS_BALANCE`(warn)   |
+| `voidSettlement`        | party/admin         | `{id, reason}`                                                                                                          | set `voided_at`                                          | `FORBIDDEN`, `ALREADY_VOID`                                |
+| `addShoppingItem`       | member              | `{listId, name, quantity?, estimated?, clientId}`                                                                       | insert → Realtime broadcast                              | `VALIDATION`                                               |
+| `toggleShoppingItem`    | member              | `{id, checked}`                                                                                                         | update `checked_by/at` (idempotent)                      | `NOT_FOUND`                                                |
+| `checkoutShoppingItems` | member              | `{listId, itemIds[], expensePayload}`                                                                                   | RPC: expense + archive items                             | `NO_ITEMS`, `SPLIT_IMBALANCE`                              |
+| `createRecurringRule`   | admin               | template + schedule                                                                                                     | insert + compute `next_run_at`                           | `VALIDATION`                                               |
+| `markNotificationsRead` | user                | `{ids[]?}`                                                                                                              | update                                                   | —                                                          |
 
 **Reads** live in `lib/data/*` as plain async functions called from Server Components: `getHouseholdsForUser`, `getHouseholdWithMembers`, `getExpenses(filters, cursor)`, `getExpenseDetail`, `getBalances`, `getSettlementSuggestions`, `getShoppingList`, `getInsights(range)`, `getActivity(cursor)`, `getNotifications`.
 
@@ -657,15 +671,15 @@ Every action shares the signature `(input: unknown) => Promise<ActionResult<T>>`
 
 ## 8. State Management Strategy
 
-| State | Where it lives | Why |
-| --- | --- | --- |
-| Server data (expenses, balances, members) | Server Components + `revalidatePath` | No client cache means no stale-cache class of bugs |
-| Filters, sorting, pagination cursor | URL `searchParams` | Shareable, back-button correct, server-readable |
-| Form state | `react-hook-form` (component-local) | Uncontrolled inputs keep the split editor fast |
-| Optimistic mutations | `useOptimistic` | Instant feedback with automatic reconciliation |
-| Realtime list | `useReducer` fed by the Realtime channel | Event stream maps naturally to a reducer |
-| Session | Cookies via `@supabase/ssr` | Readable on both server and client |
-| Ephemeral UI (dialogs, toasts) | Local `useState` / `sonner` | Never worth globalising |
+| State                                     | Where it lives                           | Why                                                |
+| ----------------------------------------- | ---------------------------------------- | -------------------------------------------------- |
+| Server data (expenses, balances, members) | Server Components + `revalidatePath`     | No client cache means no stale-cache class of bugs |
+| Filters, sorting, pagination cursor       | URL `searchParams`                       | Shareable, back-button correct, server-readable    |
+| Form state                                | `react-hook-form` (component-local)      | Uncontrolled inputs keep the split editor fast     |
+| Optimistic mutations                      | `useOptimistic`                          | Instant feedback with automatic reconciliation     |
+| Realtime list                             | `useReducer` fed by the Realtime channel | Event stream maps naturally to a reducer           |
+| Session                                   | Cookies via `@supabase/ssr`              | Readable on both server and client                 |
+| Ephemeral UI (dialogs, toasts)            | Local `useState` / `sonner`              | Never worth globalising                            |
 
 **No Redux, Zustand, or TanStack Query.** The justification, in one line for the presentation: in a server-first App Router application, most "global state" is actually server state, and the framework already owns it — adding a client cache would mean maintaining two sources of truth for the same rows.
 
@@ -675,7 +689,7 @@ Every action shares the signature `(input: unknown) => Promise<ActionResult<T>>`
 
 Errors are classified into four kinds, each with a defined presentation:
 
-**Validation errors** (bad input) are returned as field-level messages and rendered next to the offending input. Never a toast — the user needs to see *which* field.
+**Validation errors** (bad input) are returned as field-level messages and rendered next to the offending input. Never a toast — the user needs to see _which_ field.
 
 **Domain errors** (the operation is understood but not allowed) return a typed code from a fixed enum, mapped to a human sentence: `FORBIDDEN`, `NOT_MEMBER`, `SPLIT_IMBALANCE`, `OUTSTANDING_BALANCE`, `INVITE_EXPIRED`, `CONFLICT`, `RATE_LIMITED`, and so on. Each has a matching UI copy string, and each is asserted in tests.
 
@@ -686,8 +700,10 @@ Errors are classified into four kinds, each with a defined presentation:
 ```ts
 export type ActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: { code: ErrorCode; message: string;
-                          fields?: Record<string, string> } };
+  | {
+      ok: false;
+      error: { code: ErrorCode; message: string; fields?: Record<string, string> };
+    };
 ```
 
 Actions never throw across the network boundary. Throwing produces an opaque digest in production, which is useless to both the user and to us; a typed result is inspectable and testable. Route segments additionally carry `error.tsx` boundaries as a last resort for render-time failures, and `global-error.tsx` catches anything in the root layout.
@@ -740,15 +756,15 @@ Additional guards: mutating actions are rate-limited per user (a Postgres-backed
 
 ## 13. Configuration
 
-| Variable | Scope | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Client + server | Project endpoint |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Public key; safe *only because* RLS is enforced |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Bypasses RLS — cron job exclusively; never imported into a client file |
-| `NEXT_PUBLIC_SITE_URL` | Client + server | Auth redirect and invitation link base |
-| `CRON_SECRET` | Server only | Authenticates the scheduled job |
-| `RESEND_API_KEY` | Server only | Transactional email |
-| `SENTRY_DSN` | Both | Error reporting |
+| Variable                        | Scope           | Purpose                                                                |
+| ------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Client + server | Project endpoint                                                       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Public key; safe _only because_ RLS is enforced                        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server only     | Bypasses RLS — cron job exclusively; never imported into a client file |
+| `NEXT_PUBLIC_SITE_URL`          | Client + server | Auth redirect and invitation link base                                 |
+| `CRON_SECRET`                   | Server only     | Authenticates the scheduled job                                        |
+| `RESEND_API_KEY`                | Server only     | Transactional email                                                    |
+| `SENTRY_DSN`                    | Both            | Error reporting                                                        |
 
 All are parsed by a Zod schema in `lib/env.ts` at module load, so a missing or malformed variable fails fast with a precise message instead of producing a mysterious runtime null. A lint rule forbids importing `lib/supabase/admin.ts` from anything under `components/` or any file marked `'use client'`.
 
