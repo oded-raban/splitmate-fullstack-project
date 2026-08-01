@@ -20,19 +20,22 @@
  * `cookies()` is async and must be awaited; synchronous access was removed in
  * v16. That is why this factory is itself async.
  *
- * Type parameter: the generated `Database` type will be applied here once the
- * schema has been pushed and `npm run db:types` has been run.
+ * The `Database` type parameter is what makes every query in the application
+ * check against the real schema: a misspelt column or a filter on a column that
+ * does not exist becomes a compile error rather than an empty result set at
+ * runtime. Regenerate it with `npm run db:types` after every migration.
  */
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { clientEnv } from "@/lib/env";
+import { type Database } from "@/lib/supabase/database.types";
 
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {

@@ -31,6 +31,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { clientEnv } from "@/lib/env";
+import { type Database } from "@/lib/supabase/database.types";
 
 /** Routes that require a session. Everything else is public. */
 const PROTECTED_PREFIX = "/app";
@@ -44,7 +45,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // redirect is required.
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {

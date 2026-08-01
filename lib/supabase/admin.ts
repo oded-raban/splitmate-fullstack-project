@@ -26,11 +26,12 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import { clientEnv, serverEnv } from "@/lib/env";
+import { type Database } from "@/lib/supabase/database.types";
 
 export function createAdminClient() {
   const { SUPABASE_SERVICE_ROLE_KEY } = serverEnv();
 
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
     {

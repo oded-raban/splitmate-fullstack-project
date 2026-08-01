@@ -44,20 +44,20 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 
 ## Roadmap
 
-| Phase | Contents                                                   | Milestone                                               |
-| ----- | ---------------------------------------------------------- | ------------------------------------------------------- |
-| 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅ — CI green on every push                             |
-| **1** | **PRD, architecture, technical spec**                      | **M1 ✅**                                               |
-| 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | M2 — applied and verified live; generated types pending |
-| 3     | Auth, households, invitations                              | M3 — auth ✅ (see below); households next               |
-| 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅                   |
-| 5     | Balances, settlements, activity feed — **MVP complete**    | M5                                                      |
-| 6     | Deploy to Vercel + production Supabase                     | M6                                                      |
-| 7     | Realtime shopping list, receipts                           | M7                                                      |
-| 8     | Recurring automation, notifications, insights, CSV         | M8                                                      |
-| 9     | Test plan + Vitest / RTL / RLS / Playwright suites         | M9                                                      |
-| 10    | Security & scalability documents plus hardening            | M10                                                     |
-| 11    | README, wiki, slide deck, Q&A prep                         | M11                                                     |
+| Phase | Contents                                                   | Milestone                                           |
+| ----- | ---------------------------------------------------------- | --------------------------------------------------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅ — CI green on every push                         |
+| **1** | **PRD, architecture, technical spec**                      | **M1 ✅**                                           |
+| 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | **M2 ✅** — applied, verified live, types generated |
+| 3     | Auth, households, invitations                              | M3 — auth ✅ (see below); households next           |
+| 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅               |
+| 5     | Balances, settlements, activity feed — **MVP complete**    | M5                                                  |
+| 6     | Deploy to Vercel + production Supabase                     | M6                                                  |
+| 7     | Realtime shopping list, receipts                           | M7                                                  |
+| 8     | Recurring automation, notifications, insights, CSV         | M8                                                  |
+| 9     | Test plan + Vitest / RTL / RLS / Playwright suites         | M9                                                  |
+| 10    | Security & scalability documents plus hardening            | M10                                                 |
+| 11    | README, wiki, slide deck, Q&A prep                         | M11                                                 |
 
 ---
 

@@ -25,6 +25,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,6 +58,13 @@ function buildArgs() {
   const accessToken = readEnv("SUPABASE_ACCESS_TOKEN");
   const projectRef = readEnv("SUPABASE_PROJECT_REF");
 
+  // Reported explicitly, because silently falling back to the Docker route and
+  // failing there gives no hint that a credential was simply not picked up.
+  console.log(
+    `  Credentials: access token ${accessToken ? "found" : "MISSING"}, ` +
+      `project ref ${projectRef ? "found" : "MISSING"}`,
+  );
+
   if (accessToken && projectRef) {
     process.env.SUPABASE_ACCESS_TOKEN = accessToken;
     return ["--project-id", projectRef];
@@ -77,19 +85,19 @@ function buildArgs() {
 const args = buildArgs();
 console.log(`  Reading schema via ${args[0].replace("--", "")}…`);
 
+// The CLI ships as a Node entry point, so it is invoked directly rather than
+// through `npx` with shell: true. A shell would concatenate these arguments
+// into a command line unescaped, and on the --db-url path one of them is a
+// connection string containing the database password.
+const cli = resolve(
+  dirname(createRequire(import.meta.url).resolve("supabase/package.json")),
+  "dist/supabase.js",
+);
+
 const result = spawnSync(
-  "npx",
-  [
-    "--no-install",
-    "supabase",
-    "gen",
-    "types",
-    "typescript",
-    ...args,
-    "--schema",
-    "public",
-  ],
-  { encoding: "utf8", shell: true, maxBuffer: 32 * 1024 * 1024 },
+  process.execPath,
+  [cli, "gen", "types", "typescript", ...args, "--schema", "public"],
+  { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
 );
 
 const generated = result.stdout ?? "";
