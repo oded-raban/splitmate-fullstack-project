@@ -44,20 +44,58 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 
 ## Roadmap
 
-| Phase | Contents                                                   | Milestone                                              |
-| ----- | ---------------------------------------------------------- | ------------------------------------------------------ |
-| 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅                                                     |
-| **1** | **PRD, architecture, technical spec**                      | **M1 ✅**                                              |
-| 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | M2 — SQL written; awaiting a database to apply against |
-| 3     | Auth, households, invitations                              | M3                                                     |
-| 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅                  |
-| 5     | Balances, settlements, activity feed — **MVP complete**    | M5                                                     |
-| 6     | Deploy to Vercel + production Supabase                     | M6                                                     |
-| 7     | Realtime shopping list, receipts                           | M7                                                     |
-| 8     | Recurring automation, notifications, insights, CSV         | M8                                                     |
-| 9     | Test plan + Vitest / RTL / RLS / Playwright suites         | M9                                                     |
-| 10    | Security & scalability documents plus hardening            | M10                                                    |
-| 11    | README, wiki, slide deck, Q&A prep                         | M11                                                    |
+| Phase | Contents                                                   | Milestone                                               |
+| ----- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅ — CI green on every push                             |
+| **1** | **PRD, architecture, technical spec**                      | **M1 ✅**                                               |
+| 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | M2 — applied and verified live; generated types pending |
+| 3     | Auth, households, invitations                              | M3 — auth ✅ (see below); households next               |
+| 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅                   |
+| 5     | Balances, settlements, activity feed — **MVP complete**    | M5                                                      |
+| 6     | Deploy to Vercel + production Supabase                     | M6                                                      |
+| 7     | Realtime shopping list, receipts                           | M7                                                      |
+| 8     | Recurring automation, notifications, insights, CSV         | M8                                                      |
+| 9     | Test plan + Vitest / RTL / RLS / Playwright suites         | M9                                                      |
+| 10    | Security & scalability documents plus hardening            | M10                                                     |
+| 11    | README, wiki, slide deck, Q&A prep                         | M11                                                     |
+
+---
+
+## Environment Status
+
+There is no local Postgres container in this project. Docker is not installed on
+the development machine, so the hosted Supabase project is the single database
+for both development and production. The practical consequences:
+
+- `npm run db:push` applies migrations to the hosted project over a direct
+  Postgres connection (`SUPABASE_DB_URL`).
+- `npm run db:types` regenerates `lib/supabase/database.types.ts` by reading the
+  schema over the Management API (`SUPABASE_ACCESS_TOKEN`), because the CLI's
+  `--db-url` route runs postgres-meta inside a container.
+- `npm run db:check` is the safety net this arrangement needs. `db push`
+  reporting success only proves the SQL executed; the check confirms PostgREST
+  can see all 14 tables, that RLS denies an anonymous caller, and that all 11
+  business RPCs are exposed.
+- `supabase/seed.sql` is **not** applied to the hosted project. It creates
+  auth users with a known password, which is acceptable in a throwaway local
+  container and not acceptable in a database that will also serve production.
+
+### Verified working
+
+| Chain                     | Evidence                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| Schema, RLS, RPCs         | `npm run db:check` passes all 29 assertions                                      |
+| Magic-link callback       | Token verified, session cookie set, redirect to `/app`                           |
+| Profile bootstrap trigger | `handle_new_user` created the `profiles` row with the display name from metadata |
+| Protected routes          | `/app` returns 307 to `/login` without a session                                 |
+| Sign-out                  | Session cleared, redirect to `/login`                                            |
+| Google OAuth              | Reaches Google's consent screen with the correct client ID and redirect URI      |
+
+The Supabase redirect allow-list must contain `http://localhost:3000/auth/callback`
+(and the Vercel origin once deployed). Note the `/auth/` segment: the handler is
+`app/auth/callback/route.ts`, deliberately outside the `(auth)` route group so
+that the group's centred marketing layout does not wrap a route that renders
+nothing.
 
 ---
 
