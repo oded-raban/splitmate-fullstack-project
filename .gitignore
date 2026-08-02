@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Transcripts of long-running local commands, captured while debugging
+*.log
+
 # env files — secrets never enter version control.
 # .env.example is force-included: it is a submission deliverable (it documents
 # every required variable) and it contains only placeholder values.

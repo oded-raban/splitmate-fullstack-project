@@ -873,6 +873,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      preview_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          household_id: string
+          household_name: string
+          invited_email: string
+          invited_role: Database["public"]["Enums"]["household_role"]
+          inviter_name: string
+          status: string
+        }[]
+      }
       settle_up: {
         Args: {
           p_amount_minor: number
@@ -890,6 +901,10 @@ export type Database = {
         Returns: undefined
       }
       storage_household_id: { Args: { p_object_name: string }; Returns: string }
+      transfer_ownership: {
+        Args: { p_household_id: string; p_new_owner_id: string }
+        Returns: undefined
+      }
       update_expense_with_splits: {
         Args: {
           p_expected_updated_at: string

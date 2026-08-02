@@ -34,7 +34,7 @@ import { clientEnv } from "@/lib/env";
 import { type Database } from "@/lib/supabase/database.types";
 
 /** Routes that require a session. Everything else is public. */
-const PROTECTED_PREFIX = "/app";
+const PROTECTED_PREFIXES = ["/app", "/onboarding"];
 
 /** Routes a signed-in user should be bounced away from. */
 const AUTH_ROUTES = ["/login", "/signup"];
@@ -90,7 +90,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname.startsWith(PROTECTED_PREFIX)) {
+  if (!user && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     // Remember where they were headed so the round trip through the inbox

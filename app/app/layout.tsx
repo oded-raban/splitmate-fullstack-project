@@ -15,9 +15,15 @@
  */
 
 import { requireUser } from "@/lib/auth";
+import { AppHeader } from "@/components/layout/app-header";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   await requireUser("/app");
 
-  return <div className="flex min-h-svh flex-col">{children}</div>;
+  return (
+    <div className="flex min-h-svh flex-col">
+      <AppHeader />
+      <main className="flex-1">{children}</main>
+    </div>
+  );
 }

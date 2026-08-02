@@ -49,7 +49,7 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 | 0     | Repo scaffold, tooling, CI, Supabase init                  | ✅ — CI green on every push                         |
 | **1** | **PRD, architecture, technical spec**                      | **M1 ✅**                                           |
 | 2     | Migrations, constraints, RLS, RPCs, seeds, generated types | **M2 ✅** — applied, verified live, types generated |
-| 3     | Auth, households, invitations                              | M3 — auth ✅ (see below); households next           |
+| 3     | Auth, households, invitations                              | **M3 ✅** — verified end to end with three accounts |
 | 4     | Expense engine: domain layer, CRUD, history                | M4 — domain layer + 103 unit tests ✅               |
 | 5     | Balances, settlements, activity feed — **MVP complete**    | M5                                                  |
 | 6     | Deploy to Vercel + production Supabase                     | M6                                                  |
@@ -90,6 +90,39 @@ for both development and production. The practical consequences:
 | Protected routes          | `/app` returns 307 to `/login` without a session                                 |
 | Sign-out                  | Session cleared, redirect to `/login`                                            |
 | Google OAuth              | Reaches Google's consent screen with the correct client ID and redirect URI      |
+
+### Phase 3 walkthrough
+
+Exercised in the browser with three throwaway accounts (`scripts/dev-user.mjs`),
+then deleted. Each row is a rule the code claims to enforce, checked by trying to
+break it rather than by reading the implementation:
+
+| Attempted                                       | Result                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------- |
+| Create a household                              | Owner membership, default categories and shopping list seeded atomically |
+| Open an email-bound invitation as the wrong user | Refused as a mismatch, without revealing the invited address        |
+| Accept an invitation                            | Joined as member and landed in the household                        |
+| Re-open a consumed invitation link              | Refused as already used — single-use holds                          |
+| View members as a plain member                  | No invite control, no manage menus, no settings tab                 |
+| Request `/settings` as a plain member           | 404, identical to a household that does not exist                   |
+| Open a household after being removed            | 404 — no confirmation that the household exists                     |
+| Manage members as an admin                      | Role changes and removal allowed; ownership transfer withheld       |
+| Remove a member                                 | Typed confirmation required; member list revalidated immediately    |
+| Rename a household                              | Propagated to the heading and the switcher in the shared layout     |
+
+Three defects surfaced and were fixed rather than noted: the accept flow
+navigated from the client and so re-rendered the invitation page after consuming
+its own token, greeting the invitee with "already used" (now redirected from the
+Server Action); relative timestamps caused a hydration mismatch (now isolated in
+`components/common/time-ago.tsx`); and `notFound()` thrown from the household
+layout fell through to the framework's bare 404, since a layout cannot render a
+boundary nested inside itself (boundary moved up to `app/app/not-found.tsx`).
+
+One constraint worth recording early: an `auth.users` row cannot be deleted while
+rows they created still exist, because every `created_by` column references
+`profiles` with no `ON DELETE` action. That is the right rule for a ledger — an
+expense must always name who recorded it — and it means account deletion in
+Phase 10 has to tombstone and scrub a profile rather than remove it.
 
 The Supabase redirect allow-list must contain `http://localhost:3000/auth/callback`
 (and the Vercel origin once deployed). Note the `/auth/` segment: the handler is

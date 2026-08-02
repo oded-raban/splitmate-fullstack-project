@@ -19,10 +19,11 @@
  */
 
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
+import { type HouseholdRole } from "@/lib/supabase/types";
 
 /**
  * The verified current user, or null.
@@ -81,3 +82,81 @@ export const getProfile = cache(async () => {
 
   return data;
 });
+
+/* -------------------------------------------------------------------------- */
+/* Household authorization                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The current user's role in a household, or null if they are not a member.
+ *
+ * Note what makes this trustworthy: the query runs through the RLS-constrained
+ * client, so a non-member gets zero rows from the database itself rather than a
+ * row this function then decides to reject. The check and the enforcement are
+ * the same operation, which is why they cannot disagree.
+ *
+ * Cached per request, because the layout, the page and several components each
+ * need to know the viewer's role in order to decide what to render.
+ */
+export const getMembershipRole = cache(
+  async (householdId: string): Promise<HouseholdRole | null> => {
+    const user = await getUser();
+    if (!user) return null;
+
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("household_members")
+      .select("role")
+      .eq("household_id", householdId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return data?.role ?? null;
+  },
+);
+
+/**
+ * Asserts membership, for pages and layouts.
+ *
+ * Non-members get a 404, not a 403. "You are not allowed to see this household"
+ * confirms that the household exists, which is itself information the asker was
+ * not entitled to — and with a UUID in the URL, a distinguishable response would
+ * let someone verify guesses. A household you cannot see is indistinguishable
+ * from one that does not exist.
+ */
+export async function requireMembership(householdId: string): Promise<{
+  user: User;
+  role: HouseholdRole;
+}> {
+  const user = await requireUser(`/app/households/${householdId}`);
+  const role = await getMembershipRole(householdId);
+
+  if (!role) notFound();
+
+  return { user, role };
+}
+
+/**
+ * Asserts membership *and* a sufficient role.
+ *
+ * This is a UX affordance layered on top of the real boundary, not the boundary
+ * itself: RLS rejects the underlying write regardless of what this returns. Its
+ * job is to make a page refuse to render an action the user cannot complete,
+ * rather than letting them fill in a form that the database will reject.
+ */
+export async function requireRole(
+  householdId: string,
+  allowed: readonly HouseholdRole[],
+): Promise<{ user: User; role: HouseholdRole }> {
+  const membership = await requireMembership(householdId);
+
+  if (!allowed.includes(membership.role)) notFound();
+
+  return membership;
+}
+
+/** Roles permitted to manage members, invitations and household settings. */
+export const MANAGER_ROLES = [
+  "owner",
+  "admin",
+] as const satisfies readonly HouseholdRole[];
