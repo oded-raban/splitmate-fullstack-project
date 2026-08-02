@@ -74,11 +74,25 @@ export const getProfile = cache(async () => {
   if (!user) return null;
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, display_name, email, avatar_url")
     .eq("id", user.id)
     .single();
+
+  // A missing profile is not a normal state — `handle_new_user` creates one for
+  // every account at sign-up. Swallowing the error here is what turned a real
+  // failure into an avatar that quietly rendered "?" on every page, so it is
+  // reported rather than discarded. The caller still gets null and degrades.
+  if (error) {
+    console.error("getProfile failed", {
+      userId: user.id,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+    });
+    return null;
+  }
 
   return data;
 });

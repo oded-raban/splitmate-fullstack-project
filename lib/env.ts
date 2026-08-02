@@ -35,9 +35,30 @@ const clientSchema = z.object({
     .string()
     .min(20, "NEXT_PUBLIC_SUPABASE_ANON_KEY looks too short to be a real key"),
   NEXT_PUBLIC_SITE_URL: z.url({
-    error: "NEXT_PUBLIC_SITE_URL must be a full origin, e.g. http://localhost:3000",
+    error:
+      "NEXT_PUBLIC_SITE_URL must be a full origin, e.g. http://localhost:3000 " +
+      "(on Vercel it is derived from the deployment URL automatically)",
   }),
 });
+
+/**
+ * The origin this deployment is reachable at, used to build absolute links —
+ * OAuth redirects, magic-link callbacks and invitation URLs.
+ *
+ * An explicit value always wins, because local development has no other source
+ * and a custom domain must be able to override the generated one. Failing that
+ * we fall back to the URL Vercel already knows it assigned. Requiring the
+ * variable to be set by hand would mean the value could only be known *after*
+ * the first deploy, and every preview deployment would carry the production
+ * origin — so an OAuth round trip started on a preview would land on production.
+ */
+function resolveSiteUrl(): string | undefined {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit;
+
+  const assigned = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL;
+  return assigned ? `https://${assigned}` : undefined;
+}
 
 /**
  * Note the dot access below: Next.js replaces `process.env.NEXT_PUBLIC_X`
@@ -47,7 +68,7 @@ const clientSchema = z.object({
 const clientParsed = clientSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_SITE_URL: resolveSiteUrl(),
 });
 
 if (!clientParsed.success) {

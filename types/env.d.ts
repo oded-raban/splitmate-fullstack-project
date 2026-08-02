@@ -36,6 +36,12 @@ declare global {
       NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
       /** Canonical site origin, used to build auth redirects and invite links. */
       NEXT_PUBLIC_SITE_URL?: string;
+      /**
+       * Injected by Vercel, not by us: the hostname (no scheme) that this
+       * project's production deployment is served at. lib/env.ts falls back to
+       * it so the site origin does not have to be maintained by hand.
+       */
+      NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL?: string;
 
       /* ---- Server only: must never appear in a client bundle ---- */
 

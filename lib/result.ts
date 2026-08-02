@@ -89,6 +89,16 @@ export const failures = {
 
   notFound: (what = "That item") => fail("NOT_FOUND", `${what} no longer exists.`),
 
+  /**
+   * Malformed input with no single field to blame — a tampered hidden field, or
+   * an id that is not a UUID. Distinct from a field-level validation failure,
+   * which carries `fieldErrors` so the form can point at the offending input.
+   */
+  validation: (message = "Those details aren't valid.") => fail("VALIDATION", message),
+
+  /** A rule the domain enforces, e.g. settling up with yourself. */
+  businessRule: (message: string) => fail("BUSINESS_RULE", message),
+
   conflict: () =>
     fail(
       "CONFLICT",
