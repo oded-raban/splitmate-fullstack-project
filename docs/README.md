@@ -97,18 +97,18 @@ Exercised in the browser with three throwaway accounts (`scripts/dev-user.mjs`),
 then deleted. Each row is a rule the code claims to enforce, checked by trying to
 break it rather than by reading the implementation:
 
-| Attempted                                       | Result                                                              |
-| ----------------------------------------------- | ------------------------------------------------------------------- |
-| Create a household                              | Owner membership, default categories and shopping list seeded atomically |
-| Open an email-bound invitation as the wrong user | Refused as a mismatch, without revealing the invited address        |
-| Accept an invitation                            | Joined as member and landed in the household                        |
-| Re-open a consumed invitation link              | Refused as already used — single-use holds                          |
-| View members as a plain member                  | No invite control, no manage menus, no settings tab                 |
-| Request `/settings` as a plain member           | 404, identical to a household that does not exist                   |
-| Open a household after being removed            | 404 — no confirmation that the household exists                     |
-| Manage members as an admin                      | Role changes and removal allowed; ownership transfer withheld       |
-| Remove a member                                 | Typed confirmation required; member list revalidated immediately    |
-| Rename a household                              | Propagated to the heading and the switcher in the shared layout     |
+| Attempted                                        | Result                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| Create a household                               | Owner membership, default categories and shopping list seeded atomically |
+| Open an email-bound invitation as the wrong user | Refused as a mismatch, without revealing the invited address             |
+| Accept an invitation                             | Joined as member and landed in the household                             |
+| Re-open a consumed invitation link               | Refused as already used — single-use holds                               |
+| View members as a plain member                   | No invite control, no manage menus, no settings tab                      |
+| Request `/settings` as a plain member            | 404, identical to a household that does not exist                        |
+| Open a household after being removed             | 404 — no confirmation that the household exists                          |
+| Manage members as an admin                       | Role changes and removal allowed; ownership transfer withheld            |
+| Remove a member                                  | Typed confirmation required; member list revalidated immediately         |
+| Rename a household                               | Propagated to the heading and the switcher in the shared layout          |
 
 Three defects surfaced and were fixed rather than noted: the accept flow
 navigated from the client and so re-rendered the invitation page after consuming
