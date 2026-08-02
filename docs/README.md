@@ -16,7 +16,7 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 | 05  | Scalability                                                | ⏳ Phase 7  | Bottlenecks, indexing, pagination, limits, future work                                                                         |
 | 06  | Security                                                   | ⏳ Phase 7  | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
 | 07  | Code Map & Defence                                         | ⏳ Phase 7  | Key files, core flows, technical choices, and the answers to the questions they invite                                         |
-| —   | Root `README.md`                                           | ⏳ Phase 4  | Local setup, environment variables, live links                                                                                 |
+| —   | Root `README.md`                                           | ✅ Phase 4  | Local setup, environment variables, live links                                                                                 |
 
 The internal wiki and the presentation Q&A prep are one document rather than two:
 they answer the same question — why is the system built this way — from two
@@ -50,16 +50,16 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 
 ## Roadmap
 
-| Phase | Contents                                                                                        | Done when                                            |
-| ----- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 0     | Repo scaffold, tooling, CI, Supabase init                                                       | ✅ CI green on every push                            |
-| 1     | PRD, architecture, technical spec                                                               | ✅ Deliverables 3 and 4 complete                     |
-| 2     | Migrations, constraints, RLS, RPCs, generated types                                             | ✅ Applied and verified live                         |
-| 3     | Auth, households, invitations                                                                   | ✅ Verified in browser with three accounts           |
-| **4** | **Deploy on day one, then expenses, balances, settle-up, activity feed, root README**           | Two people can split rent and settle at a public URL |
-| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation            | Feature-complete                                     |
-| 6     | Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose | E2E runs in CI against the preview deployment        |
-| 7     | Security document, scalability document, code map, slide deck                                   | Submission-ready                                     |
+| Phase | Contents                                                                                        | Done when                                     |
+| ----- | ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                                                       | ✅ CI green on every push                     |
+| 1     | PRD, architecture, technical spec                                                               | ✅ Deliverables 3 and 4 complete              |
+| 2     | Migrations, constraints, RLS, RPCs, generated types                                             | ✅ Applied and verified live                  |
+| 3     | Auth, households, invitations                                                                   | ✅ Verified in browser with three accounts    |
+| 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README               | ✅ Rent split and settled at the public URL   |
+| **5** | **Realtime shopping list, receipts, insights, notifications, CSV, recurring automation**        | Feature-complete                              |
+| 6     | Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose | E2E runs in CI against the preview deployment |
+| 7     | Security document, scalability document, code map, slide deck                                   | Submission-ready                              |
 
 Four phases where there were eight. The compression is not optimism — it comes
 from two properties of the current state.
