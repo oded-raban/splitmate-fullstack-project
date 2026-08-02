@@ -23,7 +23,7 @@ import { revalidatePath } from "next/cache";
 
 import { getUser } from "@/lib/auth";
 import { PARSE_FAILURE_MESSAGES, parseAmount } from "@/lib/domain/money";
-import { computeSplits } from "@/lib/domain/splits";
+import { computeSplits, remainderSeed } from "@/lib/domain/splits";
 import { fromDatabaseError } from "@/lib/errors";
 import { fail, failures, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
@@ -92,14 +92,14 @@ export async function createExpense(
   }
 
   // The seed only affects which participants absorb an indivisible remainder.
-  // Using the idempotency key means a retried submission allocates the leftover
-  // agora to the same person as the first attempt, so a retry is genuinely
-  // identical rather than merely equal in total.
+  // `remainderSeed` is shared with the browser's live preview and with
+  // `updateExpense`, so all three necessarily agree — see its definition for why
+  // that matters.
   const split = computeSplits({
     totalMinor: amount.value,
     method: input.splitMethod,
     participants: input.participants,
-    seed: input.idempotencyKey ?? `${input.description}:${amount.value}`,
+    seed: remainderSeed(amount.value),
   });
 
   if (!split.ok) {
@@ -159,14 +159,15 @@ export async function updateExpense(
     });
   }
 
-  // Seeded with the expense id so that re-saving an unchanged expense produces
-  // byte-identical splits, and the revision history does not fill with entries
-  // recording that a remainder moved between two people for no reason.
+  // Deliberately not seeded on the expense id: that would make the remainder
+  // allocation depend on WHICH expense this is rather than on what it says, so
+  // re-saving an untouched expense would move the odd agora to a different
+  // roommate and fill the revision history with changes nobody made.
   const split = computeSplits({
     totalMinor: amount.value,
     method: input.splitMethod,
     participants: input.participants,
-    seed: input.expenseId,
+    seed: remainderSeed(amount.value),
   });
 
   if (!split.ok) {

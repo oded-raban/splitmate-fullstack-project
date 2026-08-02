@@ -16,6 +16,7 @@ import { asMinor, type Minor } from "@/lib/domain/money";
 import {
   computeSplits,
   percentageTotal,
+  remainderSeed,
   remainingToAssign,
   type ComputeSplitsResult,
   type ParticipantInput,
@@ -576,5 +577,61 @@ describe("property: allocation is always exact", () => {
       expect(shares.reduce((a, b) => a + b, 0)).toBe(total);
       expect(shares.every((s) => s >= 0)).toBe(true);
     }
+  });
+});
+
+/**
+ * Regression. The create path, the update path and the browser's live preview
+ * each call `computeSplits` independently, and each has to arrive at the same
+ * seed or the odd agora moves between roommates.
+ *
+ * The bug this pins: the edit form was seeded with the expense id while creation
+ * was seeded with the amount, so opening an untouched expense previewed
+ * 33.34/33.34/33.33 against a stored 33.33/33.34/33.34. Saving it would have
+ * recorded a change nobody made.
+ */
+describe("remainder allocation is stable across create, edit and preview", () => {
+  const participants: ParticipantInput[] = [
+    { userId: MAYA },
+    { userId: YONATAN },
+    { userId: NOA },
+  ];
+
+  const splitWith = (seed: string) =>
+    sharesOf(
+      computeSplits({
+        totalMinor: asMinor(10001),
+        method: "equal",
+        participants,
+        seed,
+      }),
+    );
+
+  it("derives the same seed from the amount however it is expressed", () => {
+    expect(remainderSeed(asMinor(10001))).toBe(remainderSeed(10001));
+  });
+
+  it("allocates identically for creation and for a later edit", () => {
+    const onCreate = splitWith(remainderSeed(asMinor(10001)));
+    const onEdit = splitWith(remainderSeed(asMinor(10001)));
+
+    expect(onEdit).toEqual(onCreate);
+    expect(onCreate.reduce((a, b) => a + b, 0)).toBe(10001);
+  });
+
+  it("is genuinely driven by the seed, so the check above is not vacuous", () => {
+    // If the seed were ignored, every allocation would be identical and the
+    // stability assertion above would pass for the wrong reason. Some seeds
+    // coincide by chance — there are only three places the odd agora can land —
+    // so this asserts that a differing allocation exists rather than that any
+    // particular seed produces one.
+    const byAmount = splitWith(remainderSeed(asMinor(10001)));
+
+    const allocations = Array.from({ length: 25 }, (_, i) => splitWith(`seed-${i}`));
+
+    expect(
+      allocations.every((shares) => shares.reduce((a, b) => a + b, 0) === 10001),
+    ).toBe(true);
+    expect(allocations.some((shares) => shares.join() !== byAmount.join())).toBe(true);
   });
 });

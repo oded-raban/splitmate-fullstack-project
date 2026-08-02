@@ -67,6 +67,24 @@ export interface ComputeSplitsInput {
   seed: string;
 }
 
+/**
+ * The seed for an expense's remainder allocation.
+ *
+ * Exported, and the only supported way to produce one, because the value has to
+ * be identical in three places that are otherwise unrelated: the live preview in
+ * the browser, the Server Action that creates an expense, and the Server Action
+ * that updates one. If any of them derived it differently, opening an unchanged
+ * expense would show a different allocation than the one on file, and saving it
+ * would move the odd agora to a different roommate.
+ *
+ * Deriving it from the amount rather than from the expense's identity is what
+ * makes the allocation a pure function of what the expense SAYS, so the same
+ * expense always splits the same way no matter which code path arrives at it.
+ */
+export function remainderSeed(totalMinor: Minor | number): string {
+  return String(totalMinor);
+}
+
 export type SplitErrorCode =
   | "NO_PARTICIPANTS"
   | "DUPLICATE_PARTICIPANT"

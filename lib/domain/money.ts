@@ -254,18 +254,39 @@ export function min(a: Minor, b: Minor): Minor {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * The locale amounts are *displayed* in — which is a different question from
+ * which currency they are denominated in.
+ *
+ * `en-IL` rather than `he-IL`, and the distinction is not cosmetic. ICU formats
+ * ILS under a Hebrew locale as `\u200F1,234.50 \u200F₪`, wrapping the value in
+ * RIGHT-TO-LEFT MARKs. Those marks are correct inside Hebrew text and actively
+ * wrong inside English text: the bidirectional algorithm applies them to the
+ * neighbouring characters too, so "added Electricity for ₪412.00 41 minutes ago"
+ * renders as "added Electricity for 41 ₪ 412.00 minutes ago". The sentence is
+ * English, so the formatting locale must be English; only the currency is
+ * Israeli.
+ *
+ * When the interface itself is translated to Hebrew, this becomes the caller's
+ * choice rather than a constant, and the marks become correct again.
+ */
+export const DISPLAY_LOCALE = "en-IL";
+
+/**
  * Formats an amount for display, e.g. `₪1,234.50`.
  *
  * Uses `Intl.NumberFormat` rather than string concatenation so that symbol
- * placement, grouping separators and right-to-left handling are correct for the
- * locale — in Hebrew the shekel sign sits differently than a dollar sign does
- * in English, and hand-rolling that is a guaranteed source of small bugs.
+ * placement and grouping separators are correct for the locale, rather than
+ * hand-rolled per currency.
  *
  * @param minor    Amount in minor units.
  * @param currency ISO 4217 code, e.g. "ILS".
- * @param locale   BCP 47 tag. Defaults to "he-IL" to match the primary market.
+ * @param locale   BCP 47 tag. See `DISPLAY_LOCALE` for why it defaults to English.
  */
-export function formatMoney(minor: Minor, currency = "ILS", locale = "he-IL"): string {
+export function formatMoney(
+  minor: Minor,
+  currency = "ILS",
+  locale = DISPLAY_LOCALE,
+): string {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
@@ -278,7 +299,7 @@ export function formatMoney(minor: Minor, currency = "ILS", locale = "he-IL"): s
  * Formats without a currency symbol, e.g. `1,234.50`.
  * For inputs, tables and CSV export, where the symbol is in the column header.
  */
-export function formatAmount(minor: Minor, locale = "he-IL"): string {
+export function formatAmount(minor: Minor, locale = DISPLAY_LOCALE): string {
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

@@ -247,4 +247,21 @@ describe("formatting", () => {
   it("formats negative balances", () => {
     expect(formatAmount(asMinor(-1250), "en-US")).toBe("-12.50");
   });
+
+  /**
+   * Regression. Formatting ILS under `he-IL` wraps the value in RIGHT-TO-LEFT
+   * MARKs, and the bidirectional algorithm then applies them to the surrounding
+   * characters as well. Embedded in an English sentence, "added Electricity for
+   * ₪412.00 41 minutes ago" rendered as "added Electricity for 41 ₪ 412.00
+   * minutes ago" — the amount and the timestamp visibly swapped places.
+   *
+   * The interface is English, so the default formatting locale has to be too.
+   */
+  it("emits no bidirectional control characters by default", () => {
+    const BIDI_CONTROLS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/;
+
+    expect(formatMoney(asMinor(123450))).not.toMatch(BIDI_CONTROLS);
+    expect(formatMoney(asMinor(-123450))).not.toMatch(BIDI_CONTROLS);
+    expect(formatAmount(asMinor(123450))).not.toMatch(BIDI_CONTROLS);
+  });
 });

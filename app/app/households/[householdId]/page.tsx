@@ -1,23 +1,28 @@
 /**
  * Household home.
  * =============================================================================
- * Balances and the recent-activity feed are the point of this screen, and both
- * are derived from the expense ledger — which arrives in Phase 4. Until then it
- * shows the household as it currently is and points at the one action that makes
- * it useful: getting the other people in.
+ * Answers "what do I owe?" above the fold and "why?" immediately below it. Those
+ * two questions are the entire reason someone opens this app, so the balances
+ * and the activity feed come before anything administrative.
+ *
+ * Everything here is derived from the ledger on each request. Nothing on this
+ * screen is a stored summary, which is what makes it impossible for it to
+ * disagree with the expense list.
  */
 
 import Link from "next/link";
-import { Receipt, UserPlus } from "lucide-react";
-
-import { getHouseholdWithMembers } from "@/lib/data/households";
-import { displayNameOf, ROLE_LABELS } from "@/lib/display";
 import { notFound } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Receipt, UserPlus } from "lucide-react";
+
+import { requireMembership } from "@/lib/auth";
+import { getActivity } from "@/lib/data/activity";
+import { getBalances } from "@/lib/data/expenses";
+import { getHouseholdWithMembers } from "@/lib/data/households";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { initialsOf } from "@/lib/display";
+import { ActivityFeed } from "@/components/activity/activity-feed";
+import { BalancePanel } from "@/components/balances/balance-panel";
+import { EmptyState } from "@/components/common/empty-state";
 
 export default async function HouseholdHomePage({
   params,
@@ -25,10 +30,21 @@ export default async function HouseholdHomePage({
   params: Promise<{ householdId: string }>;
 }) {
   const { householdId } = await params;
-  const household = await getHouseholdWithMembers(householdId);
+  const { user } = await requireMembership(householdId);
+
+  const [household, balances, activity] = await Promise.all([
+    getHouseholdWithMembers(householdId),
+    getBalances(householdId),
+    getActivity(householdId),
+  ]);
   if (!household) notFound();
 
   const isAlone = household.members.length === 1;
+  // A household where nobody has paid anything has no balances worth showing —
+  // only a row of zeroes, which looks like a bug rather than a starting point.
+  const hasLedger = balances.some(
+    (row) => row.paid !== 0 || row.owed !== 0 || row.settledOut !== 0,
+  );
 
   return (
     <div className="space-y-6">
@@ -52,47 +68,49 @@ export default async function HouseholdHomePage({
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {household.members.length} member{household.members.length === 1 ? "" : "s"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-border divide-y">
-            {household.members.map((member) => (
-              <li key={member.userId} className="flex items-center gap-3 py-2.5">
-                <Avatar className="size-8">
-                  {member.avatarUrl ? (
-                    <AvatarImage src={member.avatarUrl} alt="" />
-                  ) : null}
-                  <AvatarFallback className="text-xs">
-                    {initialsOf(member)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {displayNameOf(member)}
-                  {member.isViewer ? (
-                    <span className="text-muted-foreground"> (you)</span>
-                  ) : null}
-                </span>
-                <Badge variant="secondary">{ROLE_LABELS[member.role]}</Badge>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      {hasLedger ? (
+        <>
+          <BalancePanel
+            balances={balances}
+            members={household.members}
+            currency={household.currency}
+            viewerId={user.id}
+          />
 
-      <Card>
-        <CardContent className="text-muted-foreground flex items-center gap-3 py-6 text-sm">
-          <Receipt className="size-5 shrink-0" aria-hidden="true" />
-          <p>
-            Expenses, balances and settling up arrive next. The ledger this household
-            will keep is already in the database — nothing recorded here will need
-            migrating.
-          </p>
-        </CardContent>
-      </Card>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm">
+              <Link href={`/app/households/${householdId}/expenses/new`}>
+                <Plus className="size-4" />
+                Add expense
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/app/households/${householdId}/settle`}>Settle up</Link>
+            </Button>
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          icon={Receipt}
+          title="No expenses yet"
+          description="Record the first shared cost — rent, the internet bill, a supermarket run — and everyone's balance appears here."
+          action={
+            <Button asChild size="sm">
+              <Link href={`/app/households/${householdId}/expenses/new`}>
+                <Plus className="size-4" />
+                Add the first expense
+              </Link>
+            </Button>
+          }
+        />
+      )}
+
+      <ActivityFeed
+        entries={activity}
+        members={household.members}
+        currency={household.currency}
+        viewerId={user.id}
+      />
     </div>
   );
 }
