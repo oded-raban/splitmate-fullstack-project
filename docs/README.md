@@ -12,7 +12,7 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 | 01  | [Product Requirements (PRD)](./01-product-requirements.md) | ✅ Complete | Problem, users, customer, business goals, capabilities, 12 key workflows, roles, scope, non-goals, risks                       |
 | 02  | [Architecture Design](./02-architecture.md)                | ✅ Complete | Components, database rationale, data flows, page inventory, action/route inventory, permissions, library justifications, ADRs  |
 | 03  | [Technical Specification](./03-technical-spec.md)          | ✅ Complete | Directory structure, component architecture, full schema, RLS, RPCs, algorithms, CRUD catalogue, state, errors, validation, UX |
-| 04  | Test Plan                                                  | ⏳ Phase 6  | What must be tested and why, per workflow                                                                                      |
+| 04  | [Test Plan](./04-test-plan.md)                             | ✅ Complete | What must be tested and why, per workflow                                                                                      |
 | 05  | Scalability                                                | ⏳ Phase 7  | Bottlenecks, indexing, pagination, limits, future work                                                                         |
 | 06  | Security                                                   | ⏳ Phase 7  | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
 | 07  | Code Map & Defence                                         | ⏳ Phase 7  | Key files, core flows, technical choices, and the answers to the questions they invite                                         |
@@ -50,16 +50,16 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 
 ## Roadmap
 
-| Phase | Contents                                                                                        | Done when                                     |
-| ----- | ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| 0     | Repo scaffold, tooling, CI, Supabase init                                                       | ✅ CI green on every push                     |
-| 1     | PRD, architecture, technical spec                                                               | ✅ Deliverables 3 and 4 complete              |
-| 2     | Migrations, constraints, RLS, RPCs, generated types                                             | ✅ Applied and verified live                  |
-| 3     | Auth, households, invitations                                                                   | ✅ Verified in browser with three accounts    |
-| 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README               | ✅ Rent split and settled at the public URL   |
-| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation             | ✅ All six verified in the browser            |
-| **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | E2E runs in CI against the preview deployment |
-| 7     | Security document, scalability document, code map, slide deck                                   | Submission-ready                              |
+| Phase | Contents                                                                                            | Done when                                     |
+| ----- | --------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                                                           | ✅ CI green on every push                     |
+| 1     | PRD, architecture, technical spec                                                                   | ✅ Deliverables 3 and 4 complete              |
+| 2     | Migrations, constraints, RLS, RPCs, generated types                                                 | ✅ Applied and verified live                  |
+| 3     | Auth, households, invitations                                                                       | ✅ Verified in browser with three accounts    |
+| 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README                   | ✅ Rent split and settled at the public URL   |
+| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation                | ✅ All six verified in the browser            |
+| **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | ✅ 156 unit/component + 50 integration + 12 E2E tests green; E2E wired into CI against the preview deployment |
+| 7     | Security document, scalability document, code map, slide deck                                       | Submission-ready                              |
 
 Four phases where there were eight. The compression is not optimism — it comes
 from two properties of the current state.
@@ -91,6 +91,23 @@ Vercel's GitHub integration is connected (`oded-raban/splitmate-fullstack-projec
 production branch `main`), so every push to `main` deploys to production and every
 other branch or pull request gets its own preview URL automatically — no manual
 `vercel --prod` required.
+
+### E2E-against-preview CI job
+
+`.github/workflows/ci.yml`'s `e2e` job fires on GitHub's `deployment_status`
+event — which Vercel's integration reports once a preview finishes building —
+and points Playwright at `github.event.deployment_status.target_url` instead of
+a local dev server. It needs three repository secrets, the same values already
+in `.env.local`, added under **Settings → Secrets and variables → Actions**:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Every test account it creates lives on the `@splitmate.test` domain and is
+deleted in the same run's `afterAll`, so this is safe to run against the one
+shared hosted Supabase project rather than needing an ephemeral database per
+preview.
 
 ---
 
@@ -160,15 +177,15 @@ to turn a `recurring_expenses` row into an actual expense. Both are now in place
 and `npm run db:realtime` asserts the publication membership and replica
 identity so a future migration cannot silently drop them again.
 
-| Feature                       | Verified                                                                                                              |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| Realtime shopping list          | Item ticked by one client shows "got by you" / sinks below unticked items; a second checked item enables checkout       |
-| Checkout → expense              | "Turn into an expense" posts through `checkout_shopping_items`, lands on the new expense's detail page, ledger updated |
-| Receipt upload                  | Panel renders the upload affordance on an expense with no receipt; direct-to-Storage path avoids the 4.5MB Action limit |
-| Insights                        | Monthly bar chart and category donut render from `get_monthly_breakdown` / `get_member_stats`; range switch updates URL |
-| CSV export                      | Route handler streams a signed-in, RLS-scoped file; formula-injection and quoting covered by `tests/unit/csv.test.ts`   |
-| Notification bell               | Badge count matches unread rows; opening a notification marks it read and deep-links to the relevant page               |
-| Recurring rules                 | Rule creation resolves the correct first `next_run_at` (never backdated); cron route protected by a constant-time token |
+| Feature                | Verified                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Realtime shopping list | Item ticked by one client shows "got by you" / sinks below unticked items; a second checked item enables checkout       |
+| Checkout → expense     | "Turn into an expense" posts through `checkout_shopping_items`, lands on the new expense's detail page, ledger updated  |
+| Receipt upload         | Panel renders the upload affordance on an expense with no receipt; direct-to-Storage path avoids the 4.5MB Action limit |
+| Insights               | Monthly bar chart and category donut render from `get_monthly_breakdown` / `get_member_stats`; range switch updates URL |
+| CSV export             | Route handler streams a signed-in, RLS-scoped file; formula-injection and quoting covered by `tests/unit/csv.test.ts`   |
+| Notification bell      | Badge count matches unread rows; opening a notification marks it read and deep-links to the relevant page               |
+| Recurring rules        | Rule creation resolves the correct first `next_run_at` (never backdated); cron route protected by a constant-time token |
 
 Two defects surfaced during this phase and were fixed rather than shipped: the
 notification bell's props-to-state sync used `setState` inside a `useEffect`,

@@ -1,15 +1,17 @@
 # =============================================================================
 # Continuous Integration
 # =============================================================================
-# Runs on every push and pull request. The job order is deliberate: the fastest,
-# most likely-to-fail checks run first so a broken branch reports in under a
-# minute rather than after a full build.
+# Two workflows share this file, on two different triggers:
 #
-#   quality → typecheck, lint, formatting, unit + component tests
-#   build   → a real production build, proving the app actually compiles
+#   quality → typecheck, lint, formatting, unit + component tests   (push/PR)
+#   build   → a real production build, proving the app actually compiles (push/PR)
+#   e2e     → Playwright against a live Vercel preview URL   (deployment_status)
 #
-# End-to-end tests are NOT run here. They need a live database with seeded
-# users, so they run against the Vercel preview deployment (see docs/04-test-plan.md).
+# `e2e` cannot run on `push`/`pull_request` directly: it needs a real, running
+# instance of the app to click through, and Vercel's preview URL for a given
+# commit does not exist yet at the moment GitHub fires those events — it only
+# exists once Vercel reports `deployment_status: success`. Waiting for that
+# event is the difference between testing the real preview and racing it.
 # =============================================================================
 
 name: CI
@@ -19,6 +21,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  deployment_status:
 
 # Cancel superseded runs: if two commits are pushed quickly, only the newer one
 # needs to be verified. Saves CI minutes and gives faster feedback.
@@ -29,6 +32,7 @@ concurrency:
 jobs:
   quality:
     name: Types, lint & tests
+    if: github.event_name != 'deployment_status'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +65,7 @@ jobs:
 
   build:
     name: Production build
+    if: github.event_name != 'deployment_status'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -84,3 +89,45 @@ jobs:
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key-build-only
           CRON_SECRET: placeholder-cron-secret-value
+
+  e2e:
+    name: End-to-end (Vercel preview)
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `deployment_status` does not carry the ref that triggered the
+          # deployment as context the way `push` does — this pulls the exact
+          # commit Vercel just built, not whatever `main` has moved to since.
+          ref: ${{ github.event.deployment.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Points the suite at the URL Vercel just finished deploying, instead of
+      # spinning up `npm run dev` — see `playwright.config.ts`'s `webServer`,
+      # which is skipped whenever `PLAYWRIGHT_BASE_URL` is set.
+      - name: Run E2E suite against preview deployment
+        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

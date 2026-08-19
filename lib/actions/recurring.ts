@@ -15,6 +15,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getUser } from "@/lib/auth";
+import { firstRunOnOrAfter } from "@/lib/domain/recurring";
 import { PARSE_FAILURE_MESSAGES, parseAmount } from "@/lib/domain/money";
 import { fromDatabaseError } from "@/lib/errors";
 import { fail, failures, ok, type ActionResult } from "@/lib/result";
@@ -25,50 +26,6 @@ import {
   recurringRuleSchema,
   toggleRuleSchema,
 } from "@/lib/validation/recurring";
-
-/**
- * Resolves the first date a rule should fire, on or after `startsOn`.
- *
- * Computed here rather than trusting the client, and computed forward rather
- * than simply using `startsOn`: a rule created on the 20th saying "monthly on
- * the 1st" must not immediately fire for the 1st that has already passed and
- * conjure a backdated expense nobody agreed to.
- */
-function firstRunOnOrAfter(
-  startsOn: string,
-  frequency: "weekly" | "monthly" | "yearly",
-  dayOfPeriod: number,
-): string {
-  const start = new Date(`${startsOn}T00:00:00Z`);
-
-  if (frequency === "weekly") {
-    // `getUTCDay()` is 0-6 with Sunday at 0; `dayOfPeriod` is ISO, 1-7 with
-    // Monday at 1. This maps between them before measuring the gap.
-    const current = start.getUTCDay() === 0 ? 7 : start.getUTCDay();
-    const delta = (dayOfPeriod - current + 7) % 7;
-    start.setUTCDate(start.getUTCDate() + delta);
-    return start.toISOString().slice(0, 10);
-  }
-
-  const year = start.getUTCFullYear();
-  const month = start.getUTCMonth();
-
-  // Clamped to the length of the month, so "the 31st" lands on the 28th or 30th
-  // rather than silently rolling into the following month — which is what a
-  // plain `setUTCDate(31)` does in February.
-  const candidate = (y: number, m: number) => {
-    const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-    return new Date(Date.UTC(y, m, Math.min(dayOfPeriod, lastDay)));
-  };
-
-  let next = candidate(year, month);
-  if (next < start) {
-    next =
-      frequency === "monthly" ? candidate(year, month + 1) : candidate(year + 1, month);
-  }
-
-  return next.toISOString().slice(0, 10);
-}
 
 export async function createRecurringRule(
   _previousState: ActionResult<{ ruleId: string }> | undefined,

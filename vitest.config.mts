@@ -61,6 +61,12 @@ export default defineConfig({
           // test's fixtures leak into another's assertions.
           fileParallelism: false,
           testTimeout: 30_000,
+          // Fixture setup signs multiple real users in via the Admin API
+          // (tests/integration/helpers.ts), which retries with backoff when
+          // Supabase's own auth rate limiter kicks in — comfortably possible
+          // across a whole-suite run on a free-tier project. The default 10s
+          // hook timeout is shorter than that backoff can need.
+          hookTimeout: 60_000,
         },
       },
     ],

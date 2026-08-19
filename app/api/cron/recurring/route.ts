@@ -27,12 +27,12 @@
  * stores them atomically and advances the schedule.
  */
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { asMinor } from "@/lib/domain/money";
 import { computeSplits, remainderSeed } from "@/lib/domain/splits";
 import { serverEnv } from "@/lib/env";
+import { isAuthorizedBearerToken } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Never prerendered or cached: it has side effects and must observe the clock.
@@ -43,30 +43,10 @@ export const dynamic = "force-dynamic";
 // idempotency key makes safe to retry, but is still better avoided.
 export const maxDuration = 60;
 
-/**
- * Constant-time bearer token check.
- *
- * `===` on strings returns as soon as two bytes differ, so the time it takes to
- * reject reveals how many leading characters were right — enough to recover the
- * secret one character at a time. `timingSafeEqual` always compares the whole
- * buffer. It throws on length mismatch, so length is checked separately (the
- * length of the secret is not itself sensitive).
- */
-function isAuthorised(header: string | null, secret: string): boolean {
-  if (!header?.startsWith("Bearer ")) return false;
-
-  const provided = Buffer.from(header.slice("Bearer ".length));
-  const expected = Buffer.from(secret);
-
-  if (provided.length !== expected.length) return false;
-
-  return timingSafeEqual(provided, expected);
-}
-
 export async function GET(request: NextRequest) {
   const { CRON_SECRET } = serverEnv();
 
-  if (!isAuthorised(request.headers.get("authorization"), CRON_SECRET)) {
+  if (!isAuthorizedBearerToken(request.headers.get("authorization"), CRON_SECRET)) {
     // 401 with no detail. Explaining why the token was rejected would help an
     // attacker more than it helps the operator, who has the logs.
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
