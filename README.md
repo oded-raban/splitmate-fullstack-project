@@ -100,17 +100,17 @@ sum to its total, so the fixture would not be evidence that the write path works
 
 ## Commands
 
-| Command               | Does                                                                         |
-| --------------------- | ---------------------------------------------------------------------------- |
-| `npm run dev`         | Development server                                                           |
-| `npm run ship`        | Everything CI checks, plus a production build. Run before pushing            |
-| `npm run verify`      | Types, lint, formatting, unit and component tests                            |
-| `npm run test`        | Unit and component tests                                                     |
-| `npm run test:integration` | RLS/RPC suite against the live Supabase project (see docs/04-test-plan.md) |
-| `npm run test:e2e`    | Playwright end-to-end tests                                                  |
-| `npm run db:sync`     | Apply migrations, regenerate types, verify the deployed schema               |
-| `npm run db:check`    | Assert the live database exposes every table, policy and RPC the app expects |
-| `npm run db:realtime` | Assert `shopping_items` and `notifications` are actually streaming           |
+| Command                    | Does                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `npm run dev`              | Development server                                                           |
+| `npm run ship`             | Everything CI checks, plus a production build. Run before pushing            |
+| `npm run verify`           | Types, lint, formatting, unit and component tests                            |
+| `npm run test`             | Unit and component tests                                                     |
+| `npm run test:integration` | RLS/RPC suite against the live Supabase project (see docs/04-test-plan.md)   |
+| `npm run test:e2e`         | Playwright end-to-end tests                                                  |
+| `npm run db:sync`          | Apply migrations, regenerate types, verify the deployed schema               |
+| `npm run db:check`         | Assert the live database exposes every table, policy and RPC the app expects |
+| `npm run db:realtime`      | Assert `shopping_items` and `notifications` are actually streaming           |
 
 `db:check` exists because `db push` reporting success only proves the SQL
 executed. It confirms PostgREST can actually see every table, that RLS denies

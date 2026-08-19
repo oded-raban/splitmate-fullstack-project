@@ -13,9 +13,10 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 | 02  | [Architecture Design](./02-architecture.md)                | ✅ Complete | Components, database rationale, data flows, page inventory, action/route inventory, permissions, library justifications, ADRs  |
 | 03  | [Technical Specification](./03-technical-spec.md)          | ✅ Complete | Directory structure, component architecture, full schema, RLS, RPCs, algorithms, CRUD catalogue, state, errors, validation, UX |
 | 04  | [Test Plan](./04-test-plan.md)                             | ✅ Complete | What must be tested and why, per workflow                                                                                      |
-| 05  | Scalability                                                | ⏳ Phase 7  | Bottlenecks, indexing, pagination, limits, future work                                                                         |
-| 06  | Security                                                   | ⏳ Phase 7  | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
-| 07  | Code Map & Defence                                         | ⏳ Phase 7  | Key files, core flows, technical choices, and the answers to the questions they invite                                         |
+| 05  | [Scalability](./05-scalability.md)                         | ✅ Complete | Bottlenecks, indexing, pagination, limits, future work                                                                         |
+| 06  | [Security](./06-security.md)                               | ✅ Complete | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
+| 07  | [Code Map & Defence](./07-code-map.md)                     | ✅ Complete | Key files, core flows, technical choices, and the answers to the questions they invite                                         |
+| —   | [Slide Deck](./slides.md)                                  | ✅ Complete | Marp-format slides for the 10–15 minute presentation                                                                           |
 | —   | Root `README.md`                                           | ✅ Phase 4  | Local setup, environment variables, live links                                                                                 |
 
 The internal wiki and the presentation Q&A prep are one document rather than two:
@@ -40,26 +41,26 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 | 5. Implementation (Next.js, TypeScript, Supabase, Vercel) | Phases 2–5                                                                                                                         |
 | 6. Test plan document                                     | Phase 6 → `docs/04-test-plan.md`                                                                                                   |
 | 7. Test implementation (Vitest, RTL, Playwright)          | Phase 6 → `tests/`                                                                                                                 |
-| 8. Scalability document                                   | Phase 7 → `docs/05-scalability.md`                                                                                                 |
-| 9. Security document                                      | Phase 7 → `docs/06-security.md`                                                                                                    |
+| 8. Scalability document                                   | [Scalability](./05-scalability.md)                                                                                                 |
+| 9. Security document                                      | [Security](./06-security.md)                                                                                                       |
 | 10. Deployment & release                                  | Phase 4, first task — the public URL exists before the ledger does                                                                 |
-| 11. Coding-agent accountability                           | Every module carries explanatory comments; Deliverable 07 exists so the code can be defended line by line                          |
-| 12. Presentation                                          | Phase 7 → slide deck, backed by `docs/07-code-map.md`                                                                              |
+| 11. Coding-agent accountability                           | Every module carries explanatory comments; [Code Map & Defence](./07-code-map.md) exists so the code can be defended line by line  |
+| 12. Presentation                                          | [Slide Deck](./slides.md), backed by [Code Map & Defence](./07-code-map.md)                                                        |
 
 ---
 
 ## Roadmap
 
-| Phase | Contents                                                                                            | Done when                                     |
-| ----- | --------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| 0     | Repo scaffold, tooling, CI, Supabase init                                                           | ✅ CI green on every push                     |
-| 1     | PRD, architecture, technical spec                                                                   | ✅ Deliverables 3 and 4 complete              |
-| 2     | Migrations, constraints, RLS, RPCs, generated types                                                 | ✅ Applied and verified live                  |
-| 3     | Auth, households, invitations                                                                       | ✅ Verified in browser with three accounts    |
-| 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README                   | ✅ Rent split and settled at the public URL   |
-| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation                | ✅ All six verified in the browser            |
+| Phase | Contents                                                                                            | Done when                                                                                                     |
+| ----- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0     | Repo scaffold, tooling, CI, Supabase init                                                           | ✅ CI green on every push                                                                                     |
+| 1     | PRD, architecture, technical spec                                                                   | ✅ Deliverables 3 and 4 complete                                                                              |
+| 2     | Migrations, constraints, RLS, RPCs, generated types                                                 | ✅ Applied and verified live                                                                                  |
+| 3     | Auth, households, invitations                                                                       | ✅ Verified in browser with three accounts                                                                    |
+| 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README                   | ✅ Rent split and settled at the public URL                                                                   |
+| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation                | ✅ All six verified in the browser                                                                            |
 | **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | ✅ 156 unit/component + 50 integration + 12 E2E tests green; E2E wired into CI against the preview deployment |
-| 7     | Security document, scalability document, code map, slide deck                                       | Submission-ready                              |
+| 7     | Security document, scalability document, code map, slide deck                                       | ✅ All four deliverables complete                                                                             |
 
 Four phases where there were eight. The compression is not optimism — it comes
 from two properties of the current state.
@@ -91,6 +92,21 @@ Vercel's GitHub integration is connected (`oded-raban/splitmate-fullstack-projec
 production branch `main`), so every push to `main` deploys to production and every
 other branch or pull request gets its own preview URL automatically — no manual
 `vercel --prod` required.
+
+### Rendering the slide deck
+
+`docs/slides.md` is [Marp](https://marp.app/)-formatted Markdown — plain text,
+diffable, and viewable as-is in any Markdown viewer. To export it as a PDF or
+PPTX for the actual presentation:
+
+```bash
+npx @marp-team/marp-cli docs/slides.md -o docs/slides.pdf
+npx @marp-team/marp-cli docs/slides.md -o docs/slides.pptx
+```
+
+No dependency install required — `npx` fetches Marp's CLI on demand and it is
+not added to `package.json`, since nothing in the running application needs
+it.
 
 ### E2E-against-preview CI job
 

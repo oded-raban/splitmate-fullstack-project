@@ -15,7 +15,13 @@
 
 import { expect, test } from "@playwright/test";
 
-import { admin, cleanupE2eUsers, createE2eUser, signIn, type E2eUser } from "./fixtures";
+import {
+  admin,
+  cleanupE2eUsers,
+  createE2eUser,
+  signIn,
+  type E2eUser,
+} from "./fixtures";
 
 let owner: E2eUser;
 let roommate: E2eUser;

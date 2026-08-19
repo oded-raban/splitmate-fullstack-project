@@ -114,7 +114,10 @@ export async function signedInClient(user: E2eUser): Promise<SupabaseClient> {
 }
 
 /** Navigates a fresh Playwright page through a one-time magic link for `user`. */
-export async function signIn(page: { goto: (url: string) => Promise<unknown> }, user: E2eUser) {
+export async function signIn(
+  page: { goto: (url: string) => Promise<unknown> },
+  user: E2eUser,
+) {
   await page.goto(await signInPath(user.email));
 }
 
@@ -126,7 +129,10 @@ export async function cleanupE2eUsers(): Promise<void> {
   const ids = testUsers.map((user) => user.id);
   if (ids.length === 0) return;
 
-  const { data: owned } = await admin.from("households").select("id").in("created_by", ids);
+  const { data: owned } = await admin
+    .from("households")
+    .select("id")
+    .in("created_by", ids);
   for (const household of owned ?? []) {
     await admin.from("households").delete().eq("id", household.id);
   }

@@ -55,5 +55,11 @@ next-env.d.ts
 /supabase/.temp/
 /supabase/.branches/
 
+# rendered slide deck exports — docs/slides.md is the source of truth,
+# these are one `npx @marp-team/marp-cli` away and not worth versioning
+docs/slides.pdf
+docs/slides.pptx
+docs/slides.html
+
 .vercel
 .env*
