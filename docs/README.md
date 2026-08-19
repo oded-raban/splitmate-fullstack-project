@@ -85,6 +85,15 @@ marks it earns.
 
 ---
 
+## Deployment
+
+Vercel's GitHub integration is connected (`oded-raban/splitmate-fullstack-project`,
+production branch `main`), so every push to `main` deploys to production and every
+other branch or pull request gets its own preview URL automatically — no manual
+`vercel --prod` required.
+
+---
+
 ## Environment Status
 
 There is no local Postgres container in this project. Docker is not installed on
