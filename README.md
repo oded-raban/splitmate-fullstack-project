@@ -107,12 +107,19 @@ sum to its total, so the fixture would not be evidence that the write path works
 | `npm run verify`   | Types, lint, formatting, unit and component tests                            |
 | `npm run test`     | Unit and component tests                                                     |
 | `npm run test:e2e` | Playwright end-to-end tests                                                  |
-| `npm run db:sync`  | Apply migrations, regenerate types, verify the deployed schema               |
-| `npm run db:check` | Assert the live database exposes every table, policy and RPC the app expects |
+| `npm run db:sync`     | Apply migrations, regenerate types, verify the deployed schema               |
+| `npm run db:check`    | Assert the live database exposes every table, policy and RPC the app expects |
+| `npm run db:realtime` | Assert `shopping_items` and `notifications` are actually streaming           |
 
 `db:check` exists because `db push` reporting success only proves the SQL
-executed. It confirms PostgREST can actually see all 14 tables, that RLS denies
+executed. It confirms PostgREST can actually see every table, that RLS denies
 an anonymous caller, and that every business function is exposed.
+
+`db:realtime` exists for a narrower reason: publication membership is not part
+of a table's definition, so a missing `ALTER PUBLICATION ... ADD TABLE` produces
+no error anywhere. `subscribe()` still reports `SUBSCRIBED`; events simply never
+arrive. The symptom is a "live" shopping list that silently is not — this script
+is what catches that before a user does.
 
 ---
 
@@ -153,7 +160,8 @@ from reading another's ledger.
 
 ## Status
 
-Households, roles, invitations and authentication are complete and deployed. The
-expense ledger, balances and settling up are in progress; the database schema
-behind them is already applied, so nothing recorded now will need migrating. See
-the [roadmap](./docs/README.md#roadmap).
+Authentication, households, the expense ledger, balances, settling up, and all
+of Tier 1 — the realtime shopping list, receipt uploads, spending insights,
+notification bell, CSV export, and recurring-expense automation — are complete
+and deployed. Test plan, scalability, security and the code map are in
+progress. See the [roadmap](./docs/README.md#roadmap).

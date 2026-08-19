@@ -14,16 +14,26 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
 
-import { getProfile } from "@/lib/auth";
+import { getProfile, getUser } from "@/lib/auth";
 import { getHouseholdsForUser } from "@/lib/data/households";
+import { getNotifications } from "@/lib/data/notifications";
 import { HouseholdSwitcher } from "@/components/layout/household-switcher";
 import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export async function AppHeader() {
-  const [households, profile] = await Promise.all([
+  const [households, profile, notifications, user] = await Promise.all([
     getHouseholdsForUser(),
     getProfile(),
+    getNotifications(),
+    getUser(),
   ]);
+
+  // Each notification is shown in the currency of the household it came from,
+  // which the switcher's data already carries — no extra query for it.
+  const currencies = Object.fromEntries(
+    households.map((household) => [household.id, household.currency]),
+  );
 
   return (
     <header className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/75 sticky top-0 z-40 border-b backdrop-blur">
@@ -45,7 +55,15 @@ export async function AppHeader() {
 
         <HouseholdSwitcher households={households} />
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          {user ? (
+            <NotificationBell
+              userId={user.id}
+              initial={notifications}
+              currencies={currencies}
+            />
+          ) : null}
+
           <UserMenu
             person={{
               displayName: profile?.display_name ?? null,

@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { Pencil } from "lucide-react";
 
 import { requireMembership } from "@/lib/auth";
+import { getReceiptUrl } from "@/lib/actions/receipts";
 import { getExpense } from "@/lib/data/expenses";
 import { getHouseholdWithMembers } from "@/lib/data/households";
 import { displayNameOf, initialsOf } from "@/lib/display";
@@ -31,6 +32,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
+import { ReceiptPanel } from "@/components/expenses/receipt-panel";
 
 const METHOD_LABELS: Record<string, string> = {
   equal: "Split equally",
@@ -69,6 +71,13 @@ export default async function ExpenseDetailPage({
     expense.payerId === user.id ||
     role === "owner" ||
     role === "admin";
+
+  // Signed here rather than in the client component so the credential is minted
+  // by a request that has already passed RLS, and so the image starts loading
+  // with the page instead of after a round trip from the browser.
+  const receiptUrl = expense.receiptPath
+    ? await getReceiptUrl(expense.receiptPath)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -161,6 +170,14 @@ export default async function ExpenseDetailPage({
           </ul>
         </CardContent>
       </Card>
+
+      <ReceiptPanel
+        householdId={householdId}
+        expenseId={expense.id}
+        receiptUrl={receiptUrl}
+        receiptPath={expense.receiptPath}
+        canModify={canModify}
+      />
     </div>
   );
 }

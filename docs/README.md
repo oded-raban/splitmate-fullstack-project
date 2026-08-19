@@ -57,8 +57,8 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 | 2     | Migrations, constraints, RLS, RPCs, generated types                                             | ✅ Applied and verified live                  |
 | 3     | Auth, households, invitations                                                                   | ✅ Verified in browser with three accounts    |
 | 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README               | ✅ Rent split and settled at the public URL   |
-| **5** | **Realtime shopping list, receipts, insights, notifications, CSV, recurring automation**        | Feature-complete                              |
-| 6     | Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose | E2E runs in CI against the preview deployment |
+| 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation             | ✅ All six verified in the browser            |
+| **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | E2E runs in CI against the preview deployment |
 | 7     | Security document, scalability document, code map, slide deck                                   | Submission-ready                              |
 
 Four phases where there were eight. The compression is not optimism — it comes
@@ -141,6 +141,40 @@ Server Action); relative timestamps caused a hydration mismatch (now isolated in
 `components/common/time-ago.tsx`); and `notFound()` thrown from the household
 layout fell through to the framework's bare 404, since a layout cannot render a
 boundary nested inside itself (boundary moved up to `app/app/not-found.tsx`).
+
+### Phase 5 walkthrough
+
+Two gaps had to be closed before any of Tier 1 could work, both invisible from
+the schema alone: `shopping_items` and `notifications` were never added to the
+`supabase_realtime` publication (migration `20260803180000`), and no RPC existed
+to turn a `recurring_expenses` row into an actual expense. Both are now in place,
+and `npm run db:realtime` asserts the publication membership and replica
+identity so a future migration cannot silently drop them again.
+
+| Feature                       | Verified                                                                                                              |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Realtime shopping list          | Item ticked by one client shows "got by you" / sinks below unticked items; a second checked item enables checkout       |
+| Checkout → expense              | "Turn into an expense" posts through `checkout_shopping_items`, lands on the new expense's detail page, ledger updated |
+| Receipt upload                  | Panel renders the upload affordance on an expense with no receipt; direct-to-Storage path avoids the 4.5MB Action limit |
+| Insights                        | Monthly bar chart and category donut render from `get_monthly_breakdown` / `get_member_stats`; range switch updates URL |
+| CSV export                      | Route handler streams a signed-in, RLS-scoped file; formula-injection and quoting covered by `tests/unit/csv.test.ts`   |
+| Notification bell               | Badge count matches unread rows; opening a notification marks it read and deep-links to the relevant page               |
+| Recurring rules                 | Rule creation resolves the correct first `next_run_at` (never backdated); cron route protected by a constant-time token |
+
+Two defects surfaced during this phase and were fixed rather than shipped: the
+notification bell's props-to-state sync used `setState` inside a `useEffect`,
+which the `react-hooks/set-state-in-effect` lint rule correctly flagged as a
+one-frame flash of stale content — moved to an in-render adjustment instead. A
+`console.log` in the cron route's summary line was downgraded to `console.info`
+to satisfy the project's `no-console` policy, which exists so a stray debug
+`console.log` is caught by CI rather than surviving into production output.
+
+One hydration warning appeared during manual testing and was investigated rather
+than dismissed: React's dev overlay flagged a `data-cursor-ref` attribute on the
+header's home link that the server never rendered. That attribute is injected by
+the browser-automation harness used to drive the verification pass, not by
+application code — confirmed by diffing the exact attribute the overlay named
+against every prop the component actually sets. No application change was made.
 
 One constraint worth recording early: an `auth.users` row cannot be deleted while
 rows they created still exist, because every `created_by` column references

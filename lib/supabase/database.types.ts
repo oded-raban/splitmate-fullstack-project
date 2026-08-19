@@ -799,6 +799,14 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      advance_recurrence: {
+        Args: {
+          p_day: number
+          p_frequency: Database["public"]["Enums"]["recurrence_freq"]
+          p_from: string
+        }
+        Returns: string
+      }
       can_modify_expense: { Args: { p_expense_id: string }; Returns: boolean }
       checkout_shopping_items: {
         Args: { p_item_ids: string[]; p_payload: Json }
@@ -807,6 +815,10 @@ export type Database = {
       create_expense_with_splits: { Args: { p_payload: Json }; Returns: string }
       create_household: {
         Args: { p_currency?: string; p_name: string; p_timezone?: string }
+        Returns: string
+      }
+      generate_recurring_expense: {
+        Args: { p_rule_id: string; p_splits: Json }
         Returns: string
       }
       get_household_balances: {

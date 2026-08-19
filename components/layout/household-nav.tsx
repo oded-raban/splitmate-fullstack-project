@@ -29,6 +29,8 @@ const TABS = [
   { segment: "expenses", label: "Expenses" },
   { segment: "settle", label: "Settle up" },
   { segment: "shopping", label: "Shopping" },
+  { segment: "insights", label: "Insights" },
+  { segment: "recurring", label: "Recurring" },
   { segment: "members", label: "Members" },
   { segment: "settings", label: "Settings", managersOnly: true },
 ] as const;
