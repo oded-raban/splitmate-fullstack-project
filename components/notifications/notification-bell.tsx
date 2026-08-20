@@ -258,8 +258,11 @@ export function NotificationBell({
  * Every notification that refers to something should be a way of getting to it —
  * a bell that tells you rent was added and then makes you find it yourself is a
  * worse version of not being told.
+ *
+ * Exported: `/app/notifications` (the full notification centre) reuses this
+ * rather than re-deriving the same routing rules a second time.
  */
-function linkFor(item: NotificationEntry): string | null {
+export function linkFor(item: NotificationEntry): string | null {
   if (!item.householdId) return null;
   const base = `/app/households/${item.householdId}`;
   const expenseId = item.payload["expense_id"];
@@ -284,8 +287,11 @@ function linkFor(item: NotificationEntry): string | null {
   }
 }
 
-/** Turns a row into a sentence, from `type` and `payload` rather than stored prose. */
-function describe(item: NotificationEntry, currency: string): string {
+/**
+ * Turns a row into a sentence, from `type` and `payload` rather than stored
+ * prose. Exported for the same reason as `linkFor` above.
+ */
+export function describe(item: NotificationEntry, currency: string): string {
   const description =
     typeof item.payload["description"] === "string"
       ? item.payload["description"]

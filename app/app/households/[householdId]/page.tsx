@@ -110,6 +110,7 @@ export default async function HouseholdHomePage({
         members={household.members}
         currency={household.currency}
         viewerId={user.id}
+        householdId={householdId}
       />
     </div>
   );

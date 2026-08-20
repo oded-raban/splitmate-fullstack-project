@@ -16,9 +16,6 @@ style: |
 
 ### Collaborative expense management for shared households
 
-RUNI CS 2026 — Internet Technologies: Become a Full-Stack Engineer
-Final Project Presentation
-
 Oded Raban
 
 ---
@@ -173,14 +170,13 @@ path (`{household_id}/{expense_id}/{uuid}.webp`).
 
 ---
 
-## Testing — 218 automated tests, 4 layers
+## Testing — 223 automated tests, 3 layers
 
-| Layer       | Tool                   | Count | Proves                                                                     |
-| ----------- | ---------------------- | ----- | -------------------------------------------------------------------------- |
-| Unit        | Vitest                 | ~90   | Pure domain logic: money, splits, debt-simplify, recurrence math, security |
-| Component   | Vitest + RTL           | ~66   | UI logic: confirmation dialogs, notification state, forms                  |
-| Integration | Vitest, live Supabase  | 50    | RLS and RPCs — two real accounts attacking each other's data               |
-| End-to-end  | Playwright, 2 browsers | 12    | Full user workflows, including genuine multi-user realtime                 |
+| Layer            | Tool                   | Count | Proves                                                                   |
+| ---------------- | ---------------------- | ----- | ------------------------------------------------------------------------ |
+| Unit + component | Vitest + RTL           | 161   | Domain logic (money, splits, debt-simplify, recurrence, security) and UI |
+| Integration      | Vitest, live Supabase  | 50    | RLS and RPCs — two real accounts attacking each other's data             |
+| End-to-end       | Playwright, 2 browsers | 12    | Full user workflows, including genuine multi-user realtime               |
 
 Full rationale — which workflow risks which layer catches — in
 `docs/04-test-plan.md`.

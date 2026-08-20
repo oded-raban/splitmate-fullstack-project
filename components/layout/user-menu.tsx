@@ -11,7 +11,7 @@
  */
 
 import Link from "next/link";
-import { LogOut, Settings, User } from "lucide-react";
+import { Bell, LogOut, User } from "lucide-react";
 
 import { signOut } from "@/lib/actions/auth";
 import { initialsOf, type Nameable } from "@/lib/display";
@@ -63,7 +63,7 @@ export function UserMenu({ person }: UserMenuProps) {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/app/notifications" className="gap-2">
-            <Settings className="size-4" />
+            <Bell className="size-4" />
             Notifications
           </Link>
         </DropdownMenuItem>

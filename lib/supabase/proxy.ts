@@ -31,6 +31,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { clientEnv } from "@/lib/env";
+import { isUnderPath } from "@/lib/security";
 import { type Database } from "@/lib/supabase/database.types";
 
 /** Routes that require a session. Everything else is public. */
@@ -90,7 +91,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   const { pathname } = request.nextUrl;
 
-  if (!user && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (!user && PROTECTED_PREFIXES.some((prefix) => isUnderPath(pathname, prefix))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     // Remember where they were headed so the round trip through the inbox

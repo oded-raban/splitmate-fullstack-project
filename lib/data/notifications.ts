@@ -22,7 +22,17 @@ export interface NotificationEntry {
 }
 
 /** How many the bell holds. Beyond this the answer is "a lot", not a number. */
-const LIMIT = 20;
+const BELL_LIMIT = 20;
+
+/**
+ * How many the full `/app/notifications` centre loads. Higher than the bell's
+ * because this is the one place someone goes specifically to catch up, but
+ * still a fixed page rather than true pagination — a personal notification
+ * feed a few times busier than this would be an unusual household, and this
+ * is the same bet `docs/05-scalability.md` makes for every low-volume,
+ * per-user feed rather than building pagination nothing currently needs.
+ */
+export const NOTIFICATION_CENTRE_LIMIT = 100;
 
 /**
  * The viewer's most recent notifications across every household they belong to.
@@ -31,7 +41,9 @@ const LIMIT = 20;
  * and someone who is in two households wants to know that rent was added to the
  * other one without having to navigate into it first.
  */
-export async function getNotifications(): Promise<NotificationEntry[]> {
+export async function getNotifications(
+  limit: number = BELL_LIMIT,
+): Promise<NotificationEntry[]> {
   const user = await getUser();
   if (!user) return [];
 
@@ -41,7 +53,7 @@ export async function getNotifications(): Promise<NotificationEntry[]> {
     .from("notifications")
     .select("id, household_id, type, payload, read_at, created_at")
     .order("created_at", { ascending: false })
-    .limit(LIMIT);
+    .limit(limit);
 
   if (error) {
     // A failure here must not take the header — and therefore every page — down.

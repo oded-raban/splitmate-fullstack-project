@@ -3,7 +3,7 @@
 | Field        | Value                                                                          |
 | ------------ | ------------------------------------------------------------------------------ |
 | Product      | **SplitMate** — collaborative expense management for shared households         |
-| Document     | Test Plan (Deliverable #6) & Test Implementation (Deliverable #7)              |
+| Document     | Test Plan & Test Implementation                                                |
 | Version      | 1.0                                                                            |
 | Related docs | [PRD](./01-product-requirements.md) · [Technical Spec](./03-technical-spec.md) |
 
@@ -40,7 +40,7 @@ test.
 Each row is one of the PRD's key processes. "Automated" means a test in this
 repository fails if the behaviour regresses. "Verified" means it was checked
 manually and is recorded in `docs/README.md`'s phase walkthroughs, and is a
-candidate for automation if this project continues past submission.
+candidate for automation as the project continues to grow.
 
 ### P1 — Registration & Authentication
 

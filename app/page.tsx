@@ -81,7 +81,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="text-muted-foreground mx-auto w-full max-w-5xl p-6 text-sm">
-        Built as a full-stack course project.
+        © {new Date().getFullYear()} SplitMate.
       </footer>
     </div>
   );

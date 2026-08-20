@@ -9,8 +9,6 @@ than it needs. SplitMate keeps the ledger instead: anyone can record a shared
 expense in a few seconds, everyone sees an up-to-date balance, and settling up
 becomes the shortest list of payments that clears the debt.
 
-RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final project.
-
 |                      |                                                                               |
 | -------------------- | ----------------------------------------------------------------------------- |
 | **Live application** | https://splitmate-khaki.vercel.app                                            |

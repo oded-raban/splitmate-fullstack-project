@@ -39,3 +39,20 @@ export function isAuthorizedBearerToken(
 
   return timingSafeEqual(provided, expected);
 }
+
+/**
+ * Whether `pathname` is `prefix` itself, or a path segment under it.
+ *
+ * Exists because the obvious one-liner, `pathname.startsWith(prefix)`, is
+ * wrong: it treats `/apple-icon` as being under `/app`, because the
+ * *string* `/app` is a prefix of the *string* `/apple-icon`, even though
+ * `/apple-icon` is not a path segment under `/app` at all. That is not a
+ * hypothetical — it silently redirected the PWA's home-screen icon
+ * (`app/apple-icon.tsx`) to `/login` in `lib/supabase/proxy.ts`'s route
+ * protection, breaking "Add to Home Screen" on iOS, until this function
+ * replaced the prefix check everywhere route matching happens by string
+ * prefix rather than by path segment.
+ */
+export function isUnderPath(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}

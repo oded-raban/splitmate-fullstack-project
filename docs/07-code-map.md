@@ -1,16 +1,15 @@
 # Code Map & Defence
 
-The internal wiki and the presentation Q&A prep in one document, per
-`project-requirements.md` §11's recommendation. It answers one question from
-two directions: _why is the system built this way, and can I defend that
-under questioning?_
+The internal wiki and the presentation Q&A prep in one document. It answers
+one question from two directions: _why is the system built this way, and can
+it be defended under questioning?_
 
 This document deliberately does not re-explain what `docs/02-architecture.md`
 (components, data flow, ADRs) and `docs/03-technical-spec.md` (schema, RLS,
 RPCs, CRUD catalogue) already cover in depth — it points at them. Its own job
 is two things neither of those documents does: an entry-point map for
 navigating the actual codebase fast, and a rehearsed Q&A for the parts of the
-system most likely to be probed in the 10–15 minute presentation.
+system most likely to come up when presenting it.
 
 ---
 
@@ -18,19 +17,22 @@ system most likely to be probed in the 10–15 minute presentation.
 
 ### 1.1 If you're asked "show me where X happens"
 
-| Question                                                  | Look here                                                                                                          |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| How does a user become authenticated?                     | `lib/auth.ts` (`getUser`, `requireUser`); `app/auth/callback/route.ts`; `lib/supabase/proxy.ts`                    |
-| How is a household's data isolated from another's?        | `supabase/migrations/20260801120000_initial_schema.sql` (RLS policies); `lib/auth.ts` (`requireMembership`)        |
-| How is money represented and split?                       | `lib/domain/money.ts`, `lib/domain/splits.ts` — pure, framework-free, unit-tested                                  |
-| How are balances computed?                                | `get_household_balances` in `supabase/migrations/20260801120300_functions.sql`; consumed by `lib/data/expenses.ts` |
-| How does the settle-up debt simplification work?          | `lib/domain/debt-simplify.ts`                                                                                      |
-| How does the shopping list stay live across two browsers? | `components/shopping/shopping-list.tsx` (Supabase Realtime subscription + `useOptimistic`)                         |
-| How does a recurring expense actually fire?               | `app/api/cron/recurring/route.ts` → `generate_recurring_expense` RPC; scheduling math in `lib/domain/recurring.ts` |
-| How is a Server Action's result reported to the UI?       | `lib/result.ts` (`ActionResult`), `lib/errors.ts` (`fromDatabaseError`)                                            |
-| How is input validated?                                   | `lib/validation/*.ts` — one Zod schema per feature, shared by client form and Server Action                        |
-| How are environment variables and secrets handled?        | `lib/env.ts`                                                                                                       |
-| Where do the tests live, and what does each layer cover?  | `docs/04-test-plan.md`; `tests/unit`, `tests/components`, `tests/integration`, `tests/e2e`                         |
+| Question                                                  | Look here                                                                                                                                                                    |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| How does a user become authenticated?                     | `lib/auth.ts` (`getUser`, `requireUser`); `app/auth/callback/route.ts`; `lib/supabase/proxy.ts`                                                                              |
+| How is a household's data isolated from another's?        | `supabase/migrations/20260801120000_initial_schema.sql` (RLS policies); `lib/auth.ts` (`requireMembership`)                                                                  |
+| How is money represented and split?                       | `lib/domain/money.ts`, `lib/domain/splits.ts` — pure, framework-free, unit-tested                                                                                            |
+| How are balances computed?                                | `get_household_balances` in `supabase/migrations/20260801120300_functions.sql`; consumed by `lib/data/expenses.ts`                                                           |
+| How does the settle-up debt simplification work?          | `lib/domain/debt-simplify.ts`                                                                                                                                                |
+| How does the shopping list stay live across two browsers? | `components/shopping/shopping-list.tsx` (Supabase Realtime subscription + `useOptimistic`)                                                                                   |
+| How does a recurring expense actually fire?               | `app/api/cron/recurring/route.ts` → `generate_recurring_expense` RPC; scheduling math in `lib/domain/recurring.ts`                                                           |
+| How is a Server Action's result reported to the UI?       | `lib/result.ts` (`ActionResult`), `lib/errors.ts` (`fromDatabaseError`)                                                                                                      |
+| How is input validated?                                   | `lib/validation/*.ts` — one Zod schema per feature, shared by client form and Server Action                                                                                  |
+| How are environment variables and secrets handled?        | `lib/env.ts`                                                                                                                                                                 |
+| Where do the tests live, and what does each layer cover?  | `docs/04-test-plan.md`; `tests/unit`, `tests/components`, `tests/integration`, `tests/e2e`                                                                                   |
+| How is the app installable on iPhone/Android?             | `app/manifest.ts`; icon drawn once in `lib/branding/app-icon.tsx`, rendered by `app/icon.tsx`, `app/apple-icon.tsx`, `app/icon-192`, `app/icon-512`, `app/icon-512-maskable` |
+| How does a user edit their own name/avatar?               | `app/app/settings/page.tsx`, `components/account/profile-form.tsx`, `lib/actions/profile.ts`                                                                                 |
+| Where is the full notification / activity history?        | `app/app/notifications/page.tsx` (per-user, all households); `app/app/households/[householdId]/activity/page.tsx` (per-household audit trail)                                |
 
 ### 1.2 Directory structure, one level deep
 
@@ -254,12 +256,11 @@ properly instead of leaving it blocked by the `created_by` foreign-key
 constraint. Full, non-cherry-picked lists: `docs/05-scalability.md` §8–9 and
 `docs/06-security.md` §9.
 
-**"Why does the coding agent get credit for this and how do you defend it as
-your own work?"**
+**"Parts of this were built with an AI coding agent — how do you stand behind it?"**
 Because every decision above has a stated reason, a considered alternative,
 and — where the decision was ever gotten wrong — a real bug this project's
-own tests found and a real fix that was verified, not assumed. That is the
-bar `project-requirements.md` §11 sets ("full accountability for the code
-remains yours... you must review all code, understand it thoroughly, and be
-able to justify why"), and this document exists specifically to be that
-justification, rehearsed.
+own tests found and a real fix that was verified, not assumed. Tooling
+changes how fast code gets written; it does not change who is accountable
+for what it does once it ships. This document exists specifically to be that
+accountability, rehearsed: nothing above is a guess about what the system
+does, it is a description of what was actually read, tested, and verified.

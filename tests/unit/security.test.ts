@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { isAuthorizedBearerToken } from "@/lib/security";
+import { isAuthorizedBearerToken, isUnderPath } from "@/lib/security";
 
 const SECRET = "a-sufficiently-long-cron-secret-value";
 
@@ -81,5 +81,34 @@ describe("isAuthorizedBearerToken", () => {
         expect(isAuthorizedBearerToken(`Bearer ${candidate}`, SECRET)).toBe(false);
       }
     });
+  });
+});
+
+describe("isUnderPath", () => {
+  it("matches the prefix itself", () => {
+    expect(isUnderPath("/app", "/app")).toBe(true);
+  });
+
+  it("matches a real segment underneath the prefix", () => {
+    expect(isUnderPath("/app/households/123", "/app")).toBe(true);
+  });
+
+  it("does not match a route that merely starts with the same characters", () => {
+    // The regression this guards: `/apple-icon` is not under `/app` — it
+    // just happens to share a string prefix with it. A naive
+    // `pathname.startsWith("/app")` check would wrongly protect this route
+    // and 307 an unauthenticated request for the PWA's home-screen icon to
+    // `/login`, which is exactly what shipped before this function existed.
+    expect(isUnderPath("/apple-icon", "/app")).toBe(false);
+  });
+
+  it("does not match an unrelated sibling route", () => {
+    expect(isUnderPath("/onboarding", "/app")).toBe(false);
+    expect(isUnderPath("/application", "/app")).toBe(false);
+  });
+
+  it("does not match the empty string or a bare slash", () => {
+    expect(isUnderPath("", "/app")).toBe(false);
+    expect(isUnderPath("/", "/app")).toBe(false);
   });
 });

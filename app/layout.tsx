@@ -25,6 +25,22 @@ export const metadata: Metadata = {
   description:
     "Track shared household expenses, split them fairly, see who owes what, and settle up in the fewest possible payments.",
   applicationName: "SplitMate",
+  // `app/manifest.ts` supplies the PWA manifest itself (Next.js links it
+  // automatically); this block covers the one platform that ignores the
+  // manifest for these specifics — iOS reads its own home-screen title, status
+  // bar style and "this is an installed app" flag from meta tags, not from
+  // `manifest.webmanifest`, which Safari on iOS has never fully supported.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SplitMate",
+  },
+  // Stops iOS auto-linking anything that looks like a phone number in an
+  // expense description or note — a "note: call 050-1234567 first" should
+  // stay plain text, not become a tappable dialer link nobody asked for.
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,6 +48,12 @@ export const viewport: Viewport = {
   // the mobile viewport is configured deliberately rather than left to default.
   width: "device-width",
   initialScale: 1,
+  // Deliberately NOT disabling pinch-zoom (`userScalable: false`) here, even
+  // though that is common in PWA boilerplate: it is a WCAG 1.4.4 accessibility
+  // violation (Lighthouse and axe both flag it) because it stops anyone who
+  // needs to zoom text beyond this layout's fixed sizing from doing so. An
+  // installed icon and a standalone display mode are enough to "feel native"
+  // without taking away a browser capability some users depend on.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },

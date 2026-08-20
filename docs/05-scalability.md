@@ -3,7 +3,7 @@
 How SplitMate behaves as the number of households, members and ledger history
 grows, what would break first, and what the fix is when it does.
 
-The honest framing: at the scale this assignment targets — tens to low
+The honest framing: at the scale this product targets today — tens to low
 hundreds of concurrent users, spread across many small households of 2–6
 people — nothing here needs to change. The value of this document is knowing
 _which_ assumption breaks first if that stopped being true, because "it works
@@ -101,8 +101,8 @@ naive design. See §5.
 
 `app/api/cron/recurring/route.ts` selects every `recurring_expenses` row
 where `next_run_at <= now()`, across all households, in one query. Indexed
-(`idx_recurring_due`) and cheap at any realistic count of recurring rules for
-a course project; flagged here because it is the one query whose result set
+(`idx_recurring_due`) and cheap at any realistic count of recurring rules at
+today's scale; flagged here because it is the one query whose result set
 grows with total platform size rather than one household's size, same as the
 cron concern in §2.
 

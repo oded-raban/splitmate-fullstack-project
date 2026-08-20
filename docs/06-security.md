@@ -1,7 +1,7 @@
 # Basic Security
 
 What protects SplitMate's data today, why each control exists, and what is
-explicitly out of scope for a course project's baseline security bar.
+explicitly out of scope for the product's current baseline security bar.
 
 The organizing principle throughout is stated once in `docs/02-architecture.md`
 and worth repeating here, because every other decision in this document
@@ -329,8 +329,8 @@ Named honestly rather than omitted:
    account.
 3. **No audit trail for security-relevant reads**, only for ledger
    _mutations_ (`activity_log`, `expense_revisions`). Who _viewed_ a
-   household's data is not recorded anywhere — acceptable for a course
-   project, a real gap for a product handling more sensitive data.
+   household's data is not recorded anywhere — acceptable at today's stage,
+   a real gap for a product handling more sensitive data.
 4. **No 2FA / MFA option.** Magic link and OAuth both remove password risk,
    but neither offers a second factor for someone whose email account itself
    is compromised — the actual remaining single point of failure in this
@@ -352,11 +352,9 @@ Named honestly rather than omitted:
    and scrub a profile rather than remove it outright, and that flow does
    not exist yet.
 
-None of these are silent gaps — each is a scoped, named trade-off, made
-because the assignment's baseline security bar (§9 of
-`project-requirements.md`) is authentication, authorization, data isolation,
-input validation, endpoint protection and secret management, all of which are
-implemented and verified above; the items in this section are what a
-production system serving real households' financial data would need to add
-before handling money at a scale where these residual risks stop being
-theoretical.
+None of these are silent gaps — each is a scoped, named trade-off. This
+product's current baseline security bar is authentication, authorization,
+data isolation, input validation, endpoint protection and secret management,
+all of which are implemented and verified above; the items in this section
+are what handling real households' financial data at a larger scale would
+need to add before these residual risks stop being theoretical.

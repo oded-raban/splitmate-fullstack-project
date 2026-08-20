@@ -3,9 +3,9 @@
 | Field        | Value                                                                           |
 | ------------ | ------------------------------------------------------------------------------- |
 | Product      | **SplitMate** — collaborative expense management for shared households          |
-| Document     | Product Specification (Deliverable #3)                                          |
+| Document     | Product Specification                                                           |
 | Version      | 1.0                                                                             |
-| Author       | Oded (RUNI CS 2026, Internet Technologies Final Project)                        |
+| Author       | Oded Raban                                                                      |
 | Status       | Approved for implementation                                                     |
 | Related docs | [Architecture](./02-architecture.md) · [Technical Spec](./03-technical-spec.md) |
 
@@ -78,7 +78,7 @@ Friend groups on shared trips; families splitting costs with adult children; sma
 
 ### 3.4 User vs. Customer
 
-The rubric distinguishes these deliberately, and for SplitMate they are worth separating:
+The distinction matters, and for SplitMate it is worth separating:
 
 **In the launch model, the user is the customer.** Households self-serve, and monetisation is a per-household subscription. The person who pays is typically the Organiser persona, because she captures the most value (she stops doing manual work).
 
@@ -138,7 +138,7 @@ These are the tie-breakers used whenever a design decision is ambiguous.
 
 ## 6. Capabilities Required to Support the Business Goals
 
-This section maps business goals to the software capabilities that must exist — the rubric's "what software capabilities need to be built."
+This section maps business goals to the software capabilities that must exist to support them.
 
 | #   | Capability                               | Serves goal | Notes                                                       |
 | --- | ---------------------------------------- | ----------- | ----------------------------------------------------------- |
@@ -162,7 +162,7 @@ This section maps business goals to the software capabilities that must exist �
 
 ## 7. Key User Processes
 
-The rubric asks explicitly what key processes the product enables. Each process below is written as a testable workflow; the Test Plan document derives its scenarios directly from these.
+Each process below is written as a testable workflow; the Test Plan document derives its scenarios directly from these.
 
 ### P1 — Registration & Authentication
 
@@ -306,8 +306,8 @@ Each of these was considered and deliberately excluded; the reasoning matters mo
 
 | Non-goal                                            | Why excluded                                                                                                                                                                                                                                                         |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Real money movement** (Stripe, Bit, open banking) | Regulatory and PCI burden far beyond course scope. SplitMate records that a payment happened; the payment itself occurs in the app the household already uses. Deep-linking to a P2P app is a plausible v2.                                                          |
-| **Subscription billing**                            | The tier model is designed and the schema supports it, but wiring a payment provider adds a webhook surface and failure modes without demonstrating new engineering skill.                                                                                           |
+| **Real money movement** (Stripe, Bit, open banking) | Regulatory and PCI burden disproportionate to the current stage. SplitMate records that a payment happened; the payment itself occurs in the app the household already uses. Deep-linking to a P2P app is a plausible v2.                                            |
+| **Subscription billing**                            | The tier model is designed and the schema supports it, but wiring a payment provider adds a webhook surface and failure modes best justified once there is a paying user to serve.                                                                                   |
 | **Multi-currency with FX**                          | One currency per household, chosen at creation. Real multi-currency requires historical exchange rates, a rate provider, and a decision about _when_ a debt is converted — genuinely hard and easy to get subtly wrong. Documented as a v2 with a proposed approach. |
 | **OCR receipt scanning**                            | Attractive in a demo, but reliable extraction is an ML problem; a flaky version is worse than none. Receipts are stored and viewable, not parsed.                                                                                                                    |
 | **Native mobile apps**                              | A responsive, installable PWA-grade web app covers the use case.                                                                                                                                                                                                     |

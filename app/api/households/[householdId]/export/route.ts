@@ -7,10 +7,9 @@
  * to render it.
  *
  * WHY THIS EXISTS
- * The assignment asks for export, but the real reason is that a shared ledger
- * people cannot get their own data out of is a hostage. Someone moving out wants
- * the year's records; someone doing their taxes wants the utilities. Both should
- * be able to leave with what they put in.
+ * A shared ledger people cannot get their own data out of is a hostage.
+ * Someone moving out wants the year's records; someone doing their taxes
+ * wants the utilities. Both should be able to leave with what they put in.
  *
  * WHY IT READS WITH THE USER'S OWN CLIENT
  * The obvious shortcut — the service-role key, since this is "just a read" —

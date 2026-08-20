@@ -2,7 +2,7 @@
 
 | Field        | Value                                                                      |
 | ------------ | -------------------------------------------------------------------------- |
-| Document     | Technical Design (Deliverable #4, part 2)                                  |
+| Document     | Technical Design                                                           |
 | Version      | 1.0                                                                        |
 | Related docs | [PRD](./01-product-requirements.md) · [Architecture](./02-architecture.md) |
 
@@ -97,7 +97,7 @@ splitmate/
 │   ├── integration/                 # RLS / DB as two real users
 │   └── e2e/                         # Playwright
 │
-├── docs/                            # All course deliverables
+├── docs/                            # Product, architecture, test, security & scalability docs
 ├── emails/                          # React Email templates
 ├── types/env.d.ts                   # Typed process.env keys
 ├── proxy.ts                         # Session refresh + route guard + headers
@@ -772,6 +772,6 @@ All are parsed by a Zod schema in `lib/env.ts` at module load, so a missing or m
 
 ## 14. Testing Hooks Built Into the Design
 
-These are design choices made specifically to keep the system testable; the full strategy is in the Test Plan (Deliverable #5).
+These are design choices made specifically to keep the system testable; the full strategy is in the Test Plan (`docs/04-test-plan.md`).
 
 The domain layer is pure and dependency-free, so split allocation, balance derivation and debt simplification are tested exhaustively — including property-based tests asserting the invariants — in milliseconds with no database. Server Actions return typed results rather than throwing, so error paths are assertable without exception plumbing. RLS is testable because policies are pure SQL: the integration suite creates two real users in two households and asserts that cross-household reads return empty and cross-household writes are rejected. Realtime is testable because writes go through Server Actions, so a Playwright test can drive two browser contexts and assert propagation. Every interactive element carries a stable `data-testid`, and queries prefer accessible roles so tests break on real regressions rather than on styling changes.

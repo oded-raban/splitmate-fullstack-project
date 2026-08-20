@@ -1,7 +1,6 @@
 # SplitMate — Project Documentation Index
 
 **Collaborative expense management for shared households.**
-RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Project.
 
 ---
 
@@ -22,13 +21,14 @@ RUNI CS 2026 · Internet Technologies: Become a Full-Stack Engineer · Final Pro
 The internal wiki and the presentation Q&A prep are one document rather than two:
 they answer the same question — why is the system built this way — from two
 directions, and splitting them guarantees the pair drift apart. Everything above
-it stays a separate file, because the assignment's submission list names the PRD,
-the technical design, the test plan, scalability and security as separate
-deliverables, and a grader ticking that list should find one file per line item.
+it stays a separate file, because the product brief names the PRD, the
+technical design, the test plan, scalability and security as separate
+deliverables, and a reviewer checking that list should find one file per line
+item.
 
 ---
 
-## Assignment Traceability
+## Requirements Traceability
 
 Every numbered requirement in `project-requirements.md`, mapped to where it is satisfied.
 
@@ -59,8 +59,10 @@ Every numbered requirement in `project-requirements.md`, mapped to where it is s
 | 3     | Auth, households, invitations                                                                       | ✅ Verified in browser with three accounts                                                                    |
 | 4     | Deploy on day one, then expenses, balances, settle-up, activity feed, root README                   | ✅ Rent split and settled at the public URL                                                                   |
 | 5     | Realtime shopping list, receipts, insights, notifications, CSV, recurring automation                | ✅ All six verified in the browser                                                                            |
-| **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | ✅ 156 unit/component + 50 integration + 12 E2E tests green; E2E wired into CI against the preview deployment |
+| **6** | **Test plan document, Playwright E2E, RLS integration suite, and the hardening those tests expose** | ✅ 161 unit/component + 50 integration + 12 E2E tests green; E2E wired into CI against the preview deployment |
 | 7     | Security document, scalability document, code map, slide deck                                       | ✅ All four deliverables complete                                                                             |
+| 8     | Installable PWA — manifest, icons, iOS/Android home-screen support                                  | ✅ Verified via `next build` and a running dev server (see below)                                             |
+| 9     | Post-launch hardening — account settings, notification centre, full audit trail, requirements pass  | ✅ See walkthrough below                                                                                      |
 
 Four phases where there were eight. The compression is not optimism — it comes
 from two properties of the current state.
@@ -229,6 +231,99 @@ The Supabase redirect allow-list must contain `http://localhost:3000/auth/callba
 `app/auth/callback/route.ts`, deliberately outside the `(auth)` route group so
 that the group's centred marketing layout does not wrap a route that renders
 nothing.
+
+### Phase 8 walkthrough — installable PWA
+
+The app was already responsive (every page is built to the phone breakpoint,
+per `docs/03-technical-spec.md` §11); what it lacked was the pieces that let a
+phone offer to install it. This phase added, without touching a single
+feature page:
+
+| Piece                                     | Implementation                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web App Manifest                          | `app/manifest.ts` — Next.js's file convention, served at `/manifest.webmanifest` and linked automatically                                                                                                                                                       |
+| App icon (favicon, home-screen, manifest) | `lib/branding/app-icon.tsx` draws the same wallet mark as the header badge once; `app/icon.tsx`, `app/apple-icon.tsx` and the `icon-192`/`icon-512`/`icon-512-maskable` routes all render it via `next/og`'s `ImageResponse` instead of five hand-exported PNGs |
+| iOS-specific meta (`app/layout.tsx`)      | `appleWebApp` (standalone title, status bar style) — Safari on iOS never fully adopted the manifest for these                                                                                                                                                   |
+
+Two real bugs surfaced while verifying this end to end rather than just reading
+the code, both fixed rather than shipped:
+
+1. **`lib/supabase/proxy.ts` redirected `/apple-icon` to `/login`.** Its route
+   guard checked `pathname.startsWith("/app")` to protect `/app/**`, and the
+   _string_ `/app` is also a prefix of the _string_ `/apple-icon` — an
+   unrelated route that happens to share the same six characters. Every
+   unauthenticated request for the PWA's home-screen icon was silently
+   bounced to the login page, which would have made "Add to Home Screen" show
+   a blank icon on a real phone. Replaced with `isUnderPath()` in
+   `lib/security.ts`, which requires an exact match or a `/`-bounded segment,
+   and added `tests/unit/security.test.ts` cases that assert `/apple-icon` and
+   `/application` are _not_ under `/app` while `/app/households/123` is.
+2. **`app/icon.tsx`'s `id` prop is a `Promise<string>`, not a `string`.**
+   Passing it straight to `Number()` produced `NaN` for every requested
+   favicon size, which Satori (the renderer behind `ImageResponse`) failed on
+   with an opaque `"inputValue.trim is not a function"` error deep inside its
+   CSS parser rather than a clear type error. Fixed by awaiting `id` before
+   using it.
+
+Both were caught by actually requesting every generated route (`/icon-192`,
+`/icon-512`, `/icon-512-maskable`, `/icon/16`, `/icon/32`, `/icon/48`,
+`/apple-icon`, `/manifest.webmanifest`) against a running dev server and a
+`next build`, and confirmed fixed the same way — not by inspection.
+
+To verify installability on a real device: open the deployed URL in Safari on
+iPhone and use Share → **Add to Home Screen**, or in Chrome on Android and use
+the **⋮ menu → Install app** (Chrome's own install-prompt criteria — a served
+manifest with the required fields and icons over HTTPS — are satisfied by
+`app/manifest.ts` alone; no service worker is required for installability).
+Both should show the wallet icon and launch straight into `/app` in
+standalone mode, with no browser chrome.
+
+No offline support or service worker was added deliberately: every page in
+SplitMate reads live, per-request data (balances, shopping-list state,
+notifications), so a cached shell would either show stale numbers or need its
+own cache-invalidation logic to avoid it — complexity with no user-facing
+payoff for an app whose entire value proposition is that the numbers are
+current.
+
+---
+
+### Phase 9 walkthrough — post-launch hardening
+
+A pass over `project-requirements.md` against the deployed app found two
+pages the architecture document (`docs/02-architecture.md` §5) had always
+promised but that were never actually built:
+
+| Documented page                              | Reality before this phase                                                                           |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `/app/settings` — "Profile and preferences"  | Did not exist. The account menu's **Your profile** link pointed at it anyway, so clicking it 404'd. |
+| `/app/notifications` — "Notification centre" | Did not exist either. The same menu's **Notifications** link 404'd, and used the wrong icon.        |
+
+Both are now real pages, not stubs:
+
+- **`app/app/settings/page.tsx`** + **`components/account/profile-form.tsx`** —
+  edit your display name and avatar URL, backed by the `updateProfile` Server
+  Action and the `profiles_update_own` RLS policy that already existed in the
+  schema (migration `20260801120200`) with no application code ever using it.
+- **`app/app/notifications/page.tsx`** + **`components/notifications/notification-list.tsx`** —
+  every recent notification across every household, not just the header
+  bell's 20-item dropdown. Reuses the bell's own `describe()`/`linkFor()`
+  functions (now exported from `notification-bell.tsx`) so the wording of a
+  notification cannot drift between the two surfaces.
+
+A third gap surfaced while cross-checking the same architecture table: a
+documented `/app/households/[id]/activity` page ("Full audit trail") existed
+only as an inline, 12-entry "Recent activity" card on the household home
+page — no dedicated route, and no way to see anything older. Added
+**`app/app/households/[householdId]/activity/page.tsx`**, a plain read-only
+list (no client component needed — it is not interactive) capped at 300
+entries, linked from a new **Activity** tab in the household nav and a
+"View all" link on the home page's card.
+
+None of these were silent placeholders — each was a page the docs described,
+the nav or account menu already linked to, and that a real user (or anyone
+reading the architecture doc against the live app) would hit and find
+missing. All three now typecheck, lint, and build cleanly, and the existing
+161-test unit/component suite still passes unmodified.
 
 ---
 

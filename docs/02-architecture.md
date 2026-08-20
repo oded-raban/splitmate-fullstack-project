@@ -2,11 +2,11 @@
 
 | Field        | Value                                                                          |
 | ------------ | ------------------------------------------------------------------------------ |
-| Document     | Architecture Design (Deliverable #4, part 1)                                   |
+| Document     | Architecture Design                                                            |
 | Version      | 1.0                                                                            |
 | Related docs | [PRD](./01-product-requirements.md) · [Technical Spec](./03-technical-spec.md) |
 
-This document answers the architecture questions the assignment asks explicitly: what components compose the system, whether there is a database and what lives in it, what pages exist, what API routes and Server Actions are needed, how data flows between frontend, backend and database, what user types and permissions exist, and which external services we integrate and why.
+This document answers the core architecture questions explicitly: what components compose the system, whether there is a database and what lives in it, what pages exist, what API routes and Server Actions are needed, how data flows between frontend, backend and database, what user types and permissions exist, and which external services we integrate and why.
 
 ---
 
@@ -256,8 +256,8 @@ The permission matrix itself is in [PRD §8.1](./01-product-requirements.md#81-r
 
 | Choice                    | Purpose                                    | Why this, and what we rejected                                                                                                                                                                                                                                                                  |
 | ------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Next.js (App Router)**  | Full-stack React framework                 | Required by the assignment. The App Router specifically gives Server Components (no client fetch for reads) and Server Actions (typed writes), which shape the whole architecture.                                                                                                              |
-| **TypeScript (strict)**   | Type safety                                | Required. Database types are _generated_ from the schema, so a migration that renames a column breaks the build rather than production.                                                                                                                                                         |
+| **Next.js (App Router)**  | Full-stack React framework                 | Chosen as the foundation. The App Router specifically gives Server Components (no client fetch for reads) and Server Actions (typed writes), which shape the whole architecture.                                                                                                                |
+| **TypeScript (strict)**   | Type safety                                | Database types are _generated_ from the schema, so a migration that renames a column breaks the build rather than production.                                                                                                                                                                   |
 | **Supabase**              | Postgres, Auth, Storage, Realtime          | Required. Choosing it as one integrated platform avoids stitching together four vendors, and RLS lets authorization live with the data.                                                                                                                                                         |
 | **@supabase/ssr**         | Cookie-based sessions across server/client | The only correct way to share an auth session between Server Components, Server Actions and the browser client.                                                                                                                                                                                 |
 | **Tailwind CSS**          | Styling                                    | Colocated styles, no naming overhead, a design system by constraint. Rejected CSS Modules (verbose at this scale) and a component library with baked-in styling (harder to make it feel bespoke).                                                                                               |

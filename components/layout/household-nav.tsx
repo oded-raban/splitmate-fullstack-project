@@ -32,6 +32,7 @@ const TABS = [
   { segment: "insights", label: "Insights" },
   { segment: "recurring", label: "Recurring" },
   { segment: "members", label: "Members" },
+  { segment: "activity", label: "Activity" },
   { segment: "settings", label: "Settings", managersOnly: true },
 ] as const;
 

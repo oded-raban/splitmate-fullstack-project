@@ -12,6 +12,8 @@
  * speaking in two voices — and a translation would be impossible.
  */
 
+import Link from "next/link";
+
 import type { ActivityEntry } from "@/lib/data/activity";
 import type { MemberDetail } from "@/lib/data/households";
 import { displayNameOf } from "@/lib/display";
@@ -24,6 +26,8 @@ interface ActivityFeedProps {
   members: MemberDetail[];
   currency: string;
   viewerId: string;
+  /** Present only where a full audit trail exists to link to. */
+  householdId?: string;
 }
 
 export function ActivityFeed({
@@ -31,20 +35,24 @@ export function ActivityFeed({
   members,
   currency,
   viewerId,
+  householdId,
 }: ActivityFeedProps) {
   if (entries.length === 0) return null;
 
-  const nameOf = (userId: string | null) => {
-    if (!userId) return "Someone";
-    if (userId === viewerId) return "You";
-    const member = members.find((candidate) => candidate.userId === userId);
-    return member ? displayNameOf(member) : "A former member";
-  };
+  const nameOf = (userId: string | null) => actorNameOf(userId, members, viewerId);
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Recent activity</CardTitle>
+        {householdId ? (
+          <Link
+            href={`/app/households/${householdId}/activity`}
+            className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+          >
+            View all
+          </Link>
+        ) : null}
       </CardHeader>
       <CardContent>
         <ul className="space-y-2.5">
@@ -66,13 +74,41 @@ export function ActivityFeed({
 }
 
 /**
+ * The best available name for whoever performed an action, from the
+ * viewer's perspective — "You" for themselves, a former member's row may
+ * already be gone from `members` by the time this renders, so that case
+ * degrades to a label rather than a blank space.
+ *
+ * Exported for the same reason as `describe()` below: the full audit trail
+ * page attributes entries to people exactly the way this card does.
+ */
+export function actorNameOf(
+  userId: string | null,
+  members: MemberDetail[],
+  viewerId: string,
+): string {
+  if (!userId) return "Someone";
+  if (userId === viewerId) return "You";
+  const member = members.find((candidate) => candidate.userId === userId);
+  return member ? displayNameOf(member) : "A former member";
+}
+
+/**
  * Turns one row into a sentence.
  *
  * Falls through to a generic phrasing rather than throwing on an unrecognised
  * action: a feed that breaks the page because a newer version of the app wrote
  * an entry this one has no wording for would be a poor trade.
+ *
+ * Exported so `/app/households/[id]/activity` (the full audit trail) renders
+ * entries with the exact same wording as this card, rather than a second copy
+ * of the same switch statement that could drift from it.
  */
-function describe(entry: ActivityEntry, actor: string, currency: string): string {
+export function describe(
+  entry: ActivityEntry,
+  actor: string,
+  currency: string,
+): string {
   const description =
     typeof entry.metadata["description"] === "string"
       ? entry.metadata["description"]
