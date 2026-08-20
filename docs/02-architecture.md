@@ -77,7 +77,7 @@ Four distinct responsibilities, kept in separate directories:
 
 **Server Actions** perform all writes. Each action follows an identical, auditable pipeline (§4.2). They are the application's write API and they replace what would traditionally be `POST /api/...` endpoints.
 
-**Route Handlers** exist only where a Server Action cannot be used: the OAuth callback (`/auth/callback`), the daily cron job (`/api/cron/recurring`), and CSV export (`/api/export/[householdId]`, which streams a file rather than returning React).
+**Route Handlers** exist only where a Server Action cannot be used: the OAuth callback (`/auth/callback`), the daily cron job (`/api/cron/recurring`), and CSV export (`/api/households/[householdId]/export`, which streams a file rather than returning React).
 
 **The domain layer** is framework-free, dependency-free TypeScript: money arithmetic, the four split algorithms, balance derivation, and debt simplification. It imports nothing from Next.js or Supabase, which is precisely why it can be unit-tested exhaustively in milliseconds. **This is the part of the codebase that must be provably correct.**
 
@@ -185,7 +185,7 @@ Route groups keep authenticated and public surfaces cleanly separated, each with
 | Route                                       | Rendering            | Auth                   | Purpose                                                      |
 | ------------------------------------------- | -------------------- | ---------------------- | ------------------------------------------------------------ |
 | `/`                                         | Static               | Public                 | Landing page: problem, product, call to action               |
-| `/pricing`, `/privacy`, `/terms`            | Static               | Public                 | Marketing and legal                                          |
+| `/privacy`, `/terms`                        | Static               | Public                 | Privacy policy and terms of service                          |
 | `/login`                                    | Static + client form | Public                 | Magic link and Google sign-in                                |
 | `/auth/callback`                            | Route handler        | Public                 | Exchanges the auth code for a session                        |
 | `/onboarding`                               | Dynamic              | Required               | First-run: create or join a household                        |
@@ -223,7 +223,7 @@ Grouped by aggregate. Full signatures, input schemas and error codes are in the 
 **Notifications:** mark read, mark all read.
 **Profile:** update display name and avatar.
 
-**Route handlers:** `GET /auth/callback` (OAuth/magic-link code exchange), `GET /api/cron/recurring` (scheduled generation, secret-guarded), `GET /api/export/[householdId]` (CSV stream, membership-checked).
+**Route handlers:** `GET /auth/callback` (OAuth/magic-link code exchange), `GET /api/cron/recurring` (scheduled generation, secret-guarded), `GET /api/households/[householdId]/export` (CSV stream, membership-checked).
 
 ### Why Server Actions instead of REST endpoints
 
@@ -279,11 +279,23 @@ Every dependency above is justified by a capability we would otherwise have to b
 
 ## 9. Environments
 
-| Environment | Frontend              | Database                              | Purpose                                  |
-| ----------- | --------------------- | ------------------------------------- | ---------------------------------------- |
-| Local       | `next dev`            | Supabase CLI (Docker, local Postgres) | Development; destructive resets are free |
-| Preview     | Vercel preview per PR | Shared staging Supabase project       | Review and E2E runs before merge         |
-| Production  | Vercel production     | Dedicated Supabase project            | Live users                               |
+| Environment | Frontend              | Database                                     | Purpose                          |
+| ----------- | --------------------- | -------------------------------------------- | -------------------------------- |
+| Local       | `next dev`            | The one hosted Supabase project (note below) | Development                      |
+| Preview     | Vercel preview per PR | The one hosted Supabase project (note below) | Review and E2E runs before merge |
+| Production  | Vercel production     | The one hosted Supabase project (note below) | Live users                       |
+
+**Note on the database column:** the Supabase CLI's local stack (Docker plus
+a local Postgres) was deliberately not used for this project — Docker is not
+installed on the development machine — so local development, preview
+deployments and production all currently point at the same hosted Supabase
+project rather than three isolated database instances. `docs/README.md`'s
+"Environment Status" section spells out the practical consequences (how
+migrations are applied without the CLI's local runner, why `npm run db:check`
+exists as a safety net, and why `supabase/seed.sql` — which creates auth
+users with a known password — is never run against it). Splitting this into
+per-environment projects later is a mechanical, low-risk change, since every
+schema change already lives as versioned SQL rather than dashboard edits.
 
 Schema changes are **only ever** applied as versioned SQL migration files in `supabase/migrations/`, committed to git, and applied via CI. Nobody edits production schema through a dashboard — that path produces environments that silently diverge and a schema with no history.
 
@@ -303,7 +315,7 @@ Schema changes are **only ever** applied as versioned SQL migration files in `su
 
 ## 11. Key Architectural Decisions
 
-Recorded ADR-style, since "justify every technical decision" is explicitly graded.
+Recorded ADR-style, since every non-obvious technical decision should be traceable to a stated reason and a considered alternative.
 
 **ADR-1 — RLS as the authorization boundary.** _Alternative:_ enforce access only in application code. _Chosen because_ application checks are opt-in and one forgotten filter leaks data, whereas RLS is default-deny and applies to every path including Realtime and Storage. _Cost:_ policies are harder to debug and can recurse; mitigated with `SECURITY DEFINER` helper functions and a dedicated test suite that queries as two real users.
 

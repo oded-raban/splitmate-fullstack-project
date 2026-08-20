@@ -17,6 +17,55 @@ becomes the shortest list of payments that clears the debt.
 
 ---
 
+## Try it now
+
+SplitMate is a live, hosted web app — there is nothing to install and no
+account request process. Open **https://splitmate-khaki.vercel.app** in any
+browser and sign in with a Google account or a one-time email link. The first
+sign-in drops you into onboarding to create a household (or accept an
+invitation someone already sent you), and from there:
+
+1. **Create a household** — you become its owner automatically.
+2. **Invite your roommates** — an email invite link, or share the link
+   yourself; either way it's revocable and single-use.
+3. **Log an expense** — who paid, how much, and how it's split (evenly, by
+   exact amount, by percentage, or by weighted shares). Balances update for
+   everyone instantly.
+4. **Settle up** — SplitMate suggests the smallest possible set of transfers
+   that clears every debt in the household, not "everyone pays everyone."
+
+Everything else — the shared shopping list, receipts, spending insights, CSV
+export, recurring expenses, notifications — is discoverable from the
+household's own navigation once you're in.
+
+**To send it to someone else**, just share the URL above. Anyone can sign up;
+each household is private to the people invited into it. There is no waitlist,
+no install step, and no cost.
+
+**To install it on a phone** (optional — the site works fine in a browser as
+it is): open the URL in Safari on iPhone and use **Share → Add to Home
+Screen**, or in Chrome on Android use the **⋮ menu → Install app**. Either way
+it launches full-screen with its own icon, like a native app.
+
+---
+
+## What it does
+
+| Area                       | What's there                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Households**             | Multiple households per account, roles (Owner / Admin / Member), email invitations                    |
+| **Expenses**               | Four split methods, categories, receipt photos, an edit history you can actually see                  |
+| **Balances & settling up** | Always computed live from the ledger, never a stored number that can drift; debt-simplified settle-up |
+| **Shopping list**          | Realtime, shared, ticks off live on everyone's screen; checkout turns it into a split expense         |
+| **Recurring expenses**     | Rent or a subscription posts itself on schedule without anyone re-entering it                         |
+| **Insights**               | Spending by month and by category, per member                                                         |
+| **Notifications**          | A bell with unread counts, plus a full history at `/app/notifications`                                |
+| **Export**                 | Download a household's ledger as CSV                                                                  |
+| **Audit trail**            | Every mutation to a household's ledger, who did it, and when, at `/app/households/[id]/activity`      |
+| **Mobile**                 | Installable as a PWA on iOS and Android, responsive down to phone width everywhere                    |
+
+---
+
 ## Stack
 
 | Layer      | Choice                              | Why this one                                                                                                                                             |
@@ -33,6 +82,10 @@ becomes the shortest list of payments that clears the debt.
 ---
 
 ## Running it locally
+
+The application above is already live and requires no setup to use. This
+section is for contributing to or inspecting the code — not a requirement for
+trying the product.
 
 ### Prerequisites
 
@@ -159,8 +212,11 @@ from reading another's ledger.
 
 ## Status
 
-Authentication, households, the expense ledger, balances, settling up, and all
-of Tier 1 — the realtime shopping list, receipt uploads, spending insights,
-notification bell, CSV export, and recurring-expense automation — are complete
-and deployed. Test plan, scalability, security and the code map are in
-progress. See the [roadmap](./docs/README.md#roadmap).
+Every feature above is implemented, deployed, and exercised by an automated
+test suite (161 unit/component tests, 50 integration tests against real RLS
+policies, 12 Playwright end-to-end tests) plus manual verification against the
+live database. The full project documentation — product requirements,
+architecture, technical specification, test plan, scalability baseline, and
+security baseline — is complete and kept current in [`docs/`](./docs/README.md),
+whose [Roadmap](./docs/README.md#roadmap) and phase walkthroughs record how
+the project got here, including the defects found and fixed along the way.

@@ -11,6 +11,7 @@
  * because a duplicated `?next=` would otherwise be a runtime surprise.
  */
 
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { LoginForm } from "@/components/auth/login-form";
@@ -69,8 +70,15 @@ export default async function LoginPage({
         <LoginForm {...(next ? { next } : {})} />
 
         <p className="text-muted-foreground text-center text-xs text-balance">
-          By continuing you agree that SplitMate stores the expenses you record so your
-          household can see them.
+          By continuing you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-4">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-4">
+            Privacy Policy
+          </Link>
+          .
         </p>
       </CardContent>
     </Card>

@@ -16,7 +16,7 @@
 | 06  | [Security](./06-security.md)                               | ✅ Complete | AuthN/AuthZ, data isolation, validation, secrets, residual risk                                                                |
 | 07  | [Code Map & Defence](./07-code-map.md)                     | ✅ Complete | Key files, core flows, technical choices, and the answers to the questions they invite                                         |
 | —   | [Slide Deck](./slides.md)                                  | ✅ Complete | Marp-format slides for the 10–15 minute presentation                                                                           |
-| —   | Root `README.md`                                           | ✅ Phase 4  | Local setup, environment variables, live links                                                                                 |
+| —   | Root `README.md`                                           | ✅ Complete | What the app does, the live URL, and — secondarily — local setup and environment variables                                     |
 
 The internal wiki and the presentation Q&A prep are one document rather than two:
 they answer the same question — why is the system built this way — from two
@@ -324,6 +324,43 @@ the nav or account menu already linked to, and that a real user (or anyone
 reading the architecture doc against the live app) would hit and find
 missing. All three now typecheck, lint, and build cleanly, and the existing
 161-test unit/component suite still passes unmodified.
+
+A second pass, prompted by re-reading `project-requirements.md` end to end
+against the deployed app rather than against this document, found two more
+gaps and one documentation-only drift, all now closed:
+
+- **`/privacy` and `/terms` were documented in `docs/02-architecture.md` §5
+  but never built**, and nothing in the app linked to them — no active 404,
+  but a real app asking people to sign in with Google should have both, and
+  Google's own OAuth consent screen expects a privacy policy link for a
+  production app. Added `app/privacy/page.tsx` and `app/terms/page.tsx`,
+  written by hand against what the app actually does (not templated
+  boilerplate), and linked from the landing page footer and the login page's
+  existing "by continuing you agree" line. `/pricing` was documented
+  alongside them but removed from the architecture doc's page table instead
+  of built — monetisation is deliberately "designed, not implemented" (PRD
+  §4.3), so a pricing page with no real plan to price would be misleading
+  rather than honest.
+- **The CSV export route's documented path didn't match its real one.**
+  `docs/02-architecture.md` said `/api/export/[householdId]`; the route
+  handler has always lived at `/api/households/[householdId]/export/route.ts`.
+  `docs/06-security.md` and `docs/07-code-map.md` already had the correct
+  path — only the architecture doc had drifted. Fixed in both places it
+  appeared.
+- **`docs/02-architecture.md`'s Environments table claimed a local Supabase
+  CLI stack (Docker, a local Postgres) that this project has never used** —
+  directly contradicting `docs/README.md`'s own "Environment Status" section
+  a few hundred lines below, which correctly describes one hosted project
+  shared by local development, preview and production. The architecture doc
+  now says the same thing the status section does, instead of describing an
+  earlier plan that was never carried out.
+
+The root `README.md` was also rewritten: it previously spent most of its
+length on local setup, as if running the code locally were the primary way
+to use it, when the actual product is a hosted app anyone can open by URL
+today. The live link, what the product does, and how to share it with
+someone now come first; local setup is still complete but explicitly framed
+as being for contributors, not a prerequisite for using SplitMate.
 
 ---
 

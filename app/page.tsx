@@ -80,8 +80,20 @@ export default async function HomePage() {
         </ul>
       </main>
 
-      <footer className="text-muted-foreground mx-auto w-full max-w-5xl p-6 text-sm">
-        © {new Date().getFullYear()} SplitMate.
+      <footer className="text-muted-foreground mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 p-6 text-sm">
+        <span>© {new Date().getFullYear()} SplitMate.</span>
+        <Link
+          href="/privacy"
+          className="hover:text-foreground underline-offset-4 hover:underline"
+        >
+          Privacy
+        </Link>
+        <Link
+          href="/terms"
+          className="hover:text-foreground underline-offset-4 hover:underline"
+        >
+          Terms
+        </Link>
       </footer>
     </div>
   );

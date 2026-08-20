@@ -38,6 +38,7 @@ system most likely to come up when presenting it.
 
 ```
 app/                    Next.js App Router — pages, layouts, route handlers
+  page.tsx, privacy/, terms/   Public: landing, privacy policy, terms of service
   (auth)/login/          Public marketing-style layout: magic link + Google OAuth
   auth/callback/         Exchanges a magic-link token or OAuth code for a session
   onboarding/            First-run: create or join a household

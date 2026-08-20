@@ -183,6 +183,16 @@ Playwright's `browser.newContext()` gives each simulated roommate an isolated
 cookie jar in a single test process, which is what makes the second spec
 possible without running two copies of a test runner.
 
+**Account settings, the notification centre and the household activity page**
+(added post-launch, `docs/README.md`'s Phase 9) have no dedicated test file:
+they are thin, read-mostly wrappers around `updateProfile`, `getNotifications`
+and `getActivity`, all three of which are already exercised — `updateProfile`
+by RLS in `supabase/migrations/20260801120200_rls_policies.sql`'s
+`profiles_update_own` policy, the other two by the existing notification-bell
+and activity-feed component tests plus manual verification (`npm run build`
+and a running dev server) at the time they were added. A dedicated test is
+the right next addition if either page grows real branching logic.
+
 ---
 
 ## 4. What is deliberately not automated

@@ -12,27 +12,31 @@ The purpose of this document is to make implementation mechanical: by the end of
 
 ## 1. Directory Structure
 
+This is the structure as actually built (the plan below evolved slightly
+during implementation — most notably, `(app)`/`(marketing)` route groups
+turned out unnecessary since `app/` and `auth/` are already distinct literal
+segments, and `/pricing` was dropped since monetisation is designed but not
+implemented, per [PRD §4.3](./01-product-requirements.md#43-monetisation-designed-not-implemented)):
+
 ```
 splitmate/
 ├── app/
-│   ├── (marketing)/                 # Public, statically rendered
-│   │   ├── layout.tsx               # Marketing shell (nav + footer)
-│   │   ├── page.tsx                 # Landing
-│   │   ├── pricing/page.tsx
-│   │   └── (legal)/privacy|terms/page.tsx
+│   ├── page.tsx                     # Landing (public, statically rendered)
+│   ├── privacy/page.tsx             # Privacy policy (public)
+│   ├── terms/page.tsx               # Terms of service (public)
 │   ├── (auth)/
 │   │   ├── layout.tsx               # Centred card shell
-│   │   ├── login/page.tsx           # Magic link + Google
-│   │   └── verify/page.tsx          # "Check your email"
+│   │   └── login/page.tsx           # Magic link + Google
 │   ├── auth/callback/route.ts       # OAuth / magic-link code exchange
-│   ├── (app)/
-│   │   ├── layout.tsx               # Auth guard, household switcher, nav
-│   │   ├── onboarding/page.tsx
-│   │   ├── app/page.tsx             # Cross-household dashboard
-│   │   ├── app/notifications/page.tsx
-│   │   ├── app/settings/page.tsx
-│   │   ├── app/invite/[token]/page.tsx
-│   │   └── app/households/[householdId]/
+│   ├── onboarding/page.tsx          # First-run: create or join a household
+│   ├── app/
+│   │   ├── layout.tsx               # Auth guard, header, household switcher
+│   │   ├── page.tsx                 # Cross-household dashboard
+│   │   ├── not-found.tsx
+│   │   ├── settings/page.tsx        # Your own profile (name, avatar)
+│   │   ├── notifications/page.tsx   # Full notification history
+│   │   ├── invite/[token]/page.tsx
+│   │   └── households/[householdId]/
 │   │       ├── layout.tsx           # Membership guard + household nav
 │   │       ├── page.tsx             # Home: balances + recent activity
 │   │       ├── loading.tsx | error.tsx | not-found.tsx
@@ -45,42 +49,47 @@ splitmate/
 │   │       ├── insights/page.tsx
 │   │       ├── recurring/page.tsx
 │   │       ├── members/page.tsx
-│   │       ├── activity/page.tsx
-│   │       └── settings/page.tsx
+│   │       ├── activity/page.tsx    # This household's full audit trail
+│   │       └── settings/page.tsx    # This household's name, categories, danger zone
 │   ├── api/
 │   │   ├── cron/recurring/route.ts
-│   │   └── export/[householdId]/route.ts
+│   │   └── households/[householdId]/export/route.ts
+│   ├── manifest.ts, icon.tsx, apple-icon.tsx, icon-192|512|512-maskable/route.tsx  # PWA
 │   ├── layout.tsx                   # Root: fonts, providers, Toaster
 │   └── globals.css
 │
 ├── components/
 │   ├── ui/                          # shadcn primitives (button, dialog, …)
-│   ├── layout/                      # AppShell, HouseholdSwitcher, NavBar
+│   ├── layout/                      # AppHeader, HouseholdSwitcher, HouseholdNav, UserMenu
+│   ├── account/                     # ProfileForm
+│   ├── activity/                    # ActivityFeed
 │   ├── expenses/                    # ExpenseForm, SplitEditor, ExpenseList, …
 │   ├── settlements/                 # BalanceSummary, SettlementSuggestions
 │   ├── shopping/                    # ShoppingList, ShoppingItemRow, Checkout
 │   ├── insights/                    # CategoryChart, TrendChart, MemberChart
+│   ├── notifications/               # NotificationBell, NotificationList
 │   ├── members/                     # MemberList, InviteDialog, RoleSelect
-│   └── shared/                      # Money, Avatar, EmptyState, ErrorState
+│   └── common/                      # EmptyState, TimeAgo, NotFoundCard, …
 │
 ├── lib/
 │   ├── domain/                      # PURE — no framework imports
 │   │   ├── money.ts                 # Minor-unit arithmetic + formatting
 │   │   ├── splits.ts                # 4 split strategies + largest remainder
-│   │   ├── balances.ts              # Net position derivation
-│   │   ├── simplify.ts              # Debt simplification
-│   │   ├── recurrence.ts            # Next-occurrence calculation
+│   │   ├── debt-simplify.ts         # Debt simplification
+│   │   ├── recurring.ts             # Next-occurrence calculation
 │   │   └── types.ts
+│   ├── branding/                    # App icon glyph shared by header + PWA icons
 │   ├── supabase/
 │   │   ├── server.ts                # RSC / Server Action client (user JWT)
 │   │   ├── client.ts                # Browser client (Realtime)
-│   │   ├── proxy.ts                 # Session refresh helper for proxy.ts
+│   │   ├── proxy.ts                 # Session refresh + route guard for proxy.ts
 │   │   ├── admin.ts                 # service-role — cron only
 │   │   └── database.types.ts        # GENERATED — never hand-edited
 │   ├── data/                        # Query functions used by Server Components
 │   ├── actions/                     # Server Actions, one file per aggregate
 │   ├── validation/                  # Zod schemas shared client + server
-│   ├── auth/                        # requireUser, requireMember, requireRole
+│   ├── auth.ts                      # getUser, requireUser, requireMembership, requireRole
+│   ├── security.ts                  # isAuthorizedBearerToken, isUnderPath
 │   ├── errors.ts                    # AppError, error codes, PG error mapping
 │   ├── result.ts                    # ActionResult discriminated union
 │   ├── env.ts                       # Zod-validated environment variables
@@ -88,8 +97,7 @@ splitmate/
 │
 ├── supabase/
 │   ├── migrations/                  # Versioned SQL, applied in order
-│   ├── functions.sql                # RPCs (kept as migrations too)
-│   └── seed.sql
+│   └── seed.sql                     # Local-only fixture data (not applied to the hosted project)
 │
 ├── tests/
 │   ├── unit/                        # Domain layer (Vitest)
@@ -508,16 +516,26 @@ Reads are served through short-lived signed URLs (60 s), so a leaked URL expires
 
 ## 5. SQL Functions (RPCs)
 
-| Function                                         | Returns                                                    | Purpose                                                       |
-| ------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------- |
-| `create_expense_with_splits(payload jsonb)`      | `uuid`                                                     | Atomically insert expense + splits + activity + notifications |
-| `update_expense_with_splits(id, payload)`        | `void`                                                     | Same, plus a revision record; optimistic-concurrency checked  |
-| `get_household_balances(hid)`                    | `table(user_id, paid, owed, settled_out, settled_in, net)` | Net position per member                                       |
-| `get_monthly_breakdown(hid, from, to)`           | `table(month, category_id, total)`                         | Analytics aggregation                                         |
-| `get_member_stats(hid, from, to)`                | `table(user_id, paid, consumed)`                           | Fairness view                                                 |
-| `accept_invitation(token)`                       | `uuid`                                                     | Validate token and join household                             |
-| `checkout_shopping_items(list, ids, payload)`    | `uuid`                                                     | Convert checked items into one expense                        |
-| `settle_up(hid, from, to, amount, method, note)` | `uuid`                                                     | Record a settlement with validation                           |
+These are the 13 functions the application actually calls through
+`supabase.rpc(...)` — every one appears in `npm run db:check`'s "business
+functions exposed" assertion (or, for the two invitation/ownership functions
+below it, in the RLS integration suite instead):
+
+| Function                                         | Returns                                                    | Purpose                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `create_household(name, currency, timezone)`     | `uuid`                                                     | Atomically create household + owner membership + defaults                                                            |
+| `create_expense_with_splits(payload jsonb)`      | `uuid`                                                     | Atomically insert expense + splits + activity + notifications                                                        |
+| `update_expense_with_splits(id, payload)`        | `void`                                                     | Same, plus a revision record; optimistic-concurrency checked                                                         |
+| `soft_delete_expense(id)`                        | `void`                                                     | Set `deleted_at` + activity log entry                                                                                |
+| `get_household_balances(hid)`                    | `table(user_id, paid, owed, settled_out, settled_in, net)` | Net position per member                                                                                              |
+| `get_monthly_breakdown(hid, from, to)`           | `table(month, category_id, total)`                         | Analytics aggregation                                                                                                |
+| `get_member_stats(hid, from, to)`                | `table(user_id, paid, consumed)`                           | Fairness view                                                                                                        |
+| `accept_invitation(token)`                       | `uuid`                                                     | Validate token and join household                                                                                    |
+| `preview_invitation(token)`                      | `record`                                                   | Look up an invitation without accepting it; redacts the invited email unless the caller is its recipient or an admin |
+| `transfer_ownership(hid, new_owner)`             | `void`                                                     | Atomically reassign the Owner role                                                                                   |
+| `checkout_shopping_items(list, ids, payload)`    | `uuid`                                                     | Convert checked items into one expense                                                                               |
+| `settle_up(hid, from, to, amount, method, note)` | `uuid`                                                     | Record a settlement with validation                                                                                  |
+| `void_settlement(id, reason?)`                   | `void`                                                     | Set `voided_at`; reverses its effect on balances                                                                     |
 
 The balance function, which is the analytical heart of the product:
 
@@ -662,8 +680,9 @@ Every action shares the signature `(input: unknown) => Promise<ActionResult<T>>`
 | `checkoutShoppingItems` | member              | `{listId, itemIds[], expensePayload}`                                                                                   | RPC: expense + archive items                             | `NO_ITEMS`, `SPLIT_IMBALANCE`                              |
 | `createRecurringRule`   | admin               | template + schedule                                                                                                     | insert + compute `next_run_at`                           | `VALIDATION`                                               |
 | `markNotificationsRead` | user                | `{ids[]?}`                                                                                                              | update                                                   | —                                                          |
+| `updateProfile`         | self                | `{displayName, avatarUrl?}`                                                                                             | update own `profiles` row                                | `VALIDATION`, `FORBIDDEN`                                  |
 
-**Reads** live in `lib/data/*` as plain async functions called from Server Components: `getHouseholdsForUser`, `getHouseholdWithMembers`, `getExpenses(filters, cursor)`, `getExpenseDetail`, `getBalances`, `getSettlementSuggestions`, `getShoppingList`, `getInsights(range)`, `getActivity(cursor)`, `getNotifications`.
+**Reads** live in `lib/data/*` as plain async functions called from Server Components: `getHouseholdsForUser`, `getHouseholdWithMembers`, `getExpenses(filters, cursor)`, `getExpenseDetail`, `getBalances`, `getSettlementSuggestions`, `getShoppingList`, `getInsights(range)`, `getActivity(householdId, limit)`, `getNotifications(limit)`, `getProfile`.
 
 **Pagination is cursor-based** on `(spent_at, id)`, not `OFFSET`. Offset pagination re-scans skipped rows and, worse, silently drops or duplicates records when a new expense is inserted between page loads.
 
